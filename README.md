@@ -1,4 +1,4 @@
-# myagenda_app
+# myagenda app
 
 A new Flutter project.
 
