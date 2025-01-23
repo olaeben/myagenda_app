@@ -48,7 +48,7 @@ class _MyAppState extends State<MyApp> {
       builder: (context, currentThemeMode, child) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
-          title: 'My Agenda App',
+          title: 'My Agenda',
           theme: ThemeData.light(),
           darkTheme: ThemeData.dark(),
           themeMode: currentThemeMode,
