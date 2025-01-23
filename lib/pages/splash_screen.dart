@@ -40,7 +40,6 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isLightMode = Theme.of(context).brightness == Brightness.light;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -61,7 +60,7 @@ class _SplashScreenState extends State<SplashScreen>
                     riveIcon: RiveIcon.copy,
                     width: isHovered ? 90 : 60,
                     height: isHovered ? 90 : 60,
-                    color: isLightMode ? Colors.black87 : Colors.white,
+                    color: Colors.brown.shade300,
                     strokeWidth: 2,
                     loopAnimation: true,
                   ),

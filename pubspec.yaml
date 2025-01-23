@@ -43,11 +43,21 @@ dependencies:
   rive: ^0.13.20
   rive_animated_icon: ^2.0.3
   intl: ^0.20.1
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.10.0
+  flutter_launcher_icons: ^0.14.3
 dev_dependencies:
   flutter_test:
     sdk: flutter
   hive_generator: ^1.1.3
   build_runner: ^2.1.11
+
+flutter_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/logo/myagenda_logo.png"
+  min_sdk_android: 21
+  remove_alpha_ios: true
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

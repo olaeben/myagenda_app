@@ -2,9 +2,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:myagenda_app/data/myagenda_db.dart';
+import 'package:myagenda_app/services/notification_service.dart';
 import 'package:myagenda_app/util/dialogue_box.dart';
 import 'package:myagenda_app/util/myagenda_tile.dart';
 import 'package:myagenda_app/util/mybutton.dart';
+import 'dart:async';
+import 'package:flutter/services.dart'; // Add this import at the top
 
 class HomePage extends StatefulWidget {
   final VoidCallback onToggleTheme;
@@ -17,9 +20,10 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final _controller = TextEditingController();
-
-  MyagendaDb db = MyagendaDb();
+  final NotificationService _notificationService = NotificationService();
+  final MyagendaDb db = MyagendaDb();
   final _myAgenda = Hive.box('myAgenda');
+  Timer? _refreshTimer;
 
   @override
   void initState() {
@@ -28,6 +32,77 @@ class _HomePageState extends State<HomePage> {
       db.createInitialAgendaDB();
     } else {
       db.loadAgendaDB();
+    }
+    _notificationService.initNotification();
+    _checkExpiredAgendas();
+
+    // Add periodic check for expired agendas
+    _refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      _checkExpiredAgendas();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  void _checkExpiredAgendas() {
+    final now = DateTime.now();
+    bool needsUpdate = false;
+
+    for (int i = 0; i < db.myAgendaList.length; i++) {
+      final agenda = db.myAgendaList[i];
+      if (!agenda['status'] && agenda['deadline'] != null) {
+        try {
+          final deadline = DateTime.parse(agenda['deadline']);
+          if (now.isAfter(deadline)) {
+            db.myAgendaList[i]['status'] = true;
+            needsUpdate = true;
+            _notificationService.cancelNotifications(i);
+          }
+        } catch (e) {
+          db.myAgendaList[i]['deadline'] =
+              DateTime.now().add(const Duration(days: 7)).toIso8601String();
+          needsUpdate = true;
+        }
+      }
+    }
+
+    if (needsUpdate) {
+      setState(() {});
+      db.updateAgendaDB();
+    }
+  }
+
+  // Update the _scheduleNotification method
+  void _scheduleNotification(int index) {
+    final agenda = db.myAgendaList[index];
+    if (agenda['deadline'] == null) {
+      agenda['deadline'] =
+          DateTime.now().add(const Duration(days: 7)).toIso8601String();
+      db.updateAgendaDB();
+    }
+
+    final deadline = DateTime.parse(agenda['deadline']);
+    final title = agenda['title'].toString().split(' ').take(2).join(' ');
+
+    if (DateTime.now().isAfter(deadline)) {
+      setState(() {
+        db.myAgendaList[index]['status'] = true;
+      });
+      db.updateAgendaDB();
+      return;
+    }
+
+    _notificationService.cancelNotifications(index);
+    if (!agenda['status']) {
+      _notificationService.scheduleDeadlineNotifications(
+        id: index,
+        title: title,
+        deadline: deadline,
+      );
     }
   }
 
@@ -44,32 +119,46 @@ class _HomePageState extends State<HomePage> {
     ).then((value) {
       if (value != null) {
         setState(() {
-          db.myAgendaList.insert(0, {'title': value, 'status': false});
+          final newAgenda = {
+            'title': value['text'],
+            'status': false,
+            'deadline': (value['deadline'] ??
+                    DateTime.now().add(const Duration(days: 7)))
+                .toIso8601String(),
+          };
+          db.myAgendaList.insert(0, newAgenda);
         });
         db.updateAgendaDB();
+        _scheduleNotification(0);
       }
     });
   }
 
   void editAgenda(int index) {
-    _controller.text = db.myAgendaList[index]['title'];
+    final agenda = db.myAgendaList[index];
+    _controller.text = agenda['title'];
     showDialog(
       context: context,
       builder: (context) {
         return DialogueBox(
           key: UniqueKey(),
           controller: _controller,
+          initialDeadline: agenda['deadline'] != null
+              ? DateTime.parse(agenda['deadline'])
+              : DateTime.now().add(const Duration(days: 7)),
         );
       },
     ).then((value) {
       if (value != null) {
         setState(() {
           db.myAgendaList[index] = {
-            'title': value,
-            'status': db.myAgendaList[index]['status']
+            'title': value['text'],
+            'status': false, // Reset status to unchecked
+            'deadline': value['deadline'].toIso8601String(),
           };
         });
         db.updateAgendaDB();
+        _scheduleNotification(index);
       }
     });
   }
@@ -80,7 +169,7 @@ class _HomePageState extends State<HomePage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text(
+          title: const Text(
             'Are you sure you want to delete this Agenda?',
             style: TextStyle(fontSize: 16, fontFamily: 'Poppins'),
           ),
@@ -88,15 +177,14 @@ class _HomePageState extends State<HomePage> {
             MyButton(
               text: 'Cancel',
               textColor: isLightMode ? Colors.black : Colors.white,
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.of(context).pop(),
             ),
             MyButton(
               text: 'Yes',
               textColor: isLightMode ? Colors.black : Colors.white,
               onPressed: () {
                 setState(() {
+                  _notificationService.cancelNotifications(index);
                   db.myAgendaList.removeAt(index);
                 });
                 db.updateAgendaDB();
@@ -115,12 +203,29 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        elevation: 2, // Add elevation for visual separation
+        surfaceTintColor: Colors.transparent, // Remove surface tint
+        flexibleSpace: Container(
+          // Add background fill
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+          ),
+        ),
         centerTitle: false,
+        systemOverlayStyle: isLightMode
+            ? SystemUiOverlayStyle.dark.copyWith(
+                statusBarColor: Colors.transparent,
+                statusBarIconBrightness: Brightness.dark,
+              )
+            : SystemUiOverlayStyle.light.copyWith(
+                statusBarColor: Colors.transparent,
+                statusBarIconBrightness: Brightness.light,
+              ),
         actions: [
           Padding(
-            padding: EdgeInsets.fromLTRB(0, 0, 20, 0),
+            padding: const EdgeInsets.fromLTRB(0, 0, 20, 0),
             child: Row(
               children: [
                 Icon(
@@ -131,16 +236,14 @@ class _HomePageState extends State<HomePage> {
                 CupertinoSwitch(
                   value: isLightMode,
                   activeTrackColor: Colors.grey,
-                  onChanged: (value) {
-                    widget.onToggleTheme();
-                  },
+                  onChanged: (value) => widget.onToggleTheme(),
                 ),
               ],
             ),
           ),
         ],
         title: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.only(left: 14),
           child: Text(
             'M Y  A G E N D A',
             style: TextStyle(
@@ -150,32 +253,44 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ),
-        backgroundColor: Colors.transparent,
       ),
-      body: ListView.builder(
-        itemBuilder: (context, index) {
-          var agenda = db.myAgendaList[index];
-          return MyAgendaTile(
-            myAgendaTitle: agenda['title'],
-            myAgendaStatus: agenda['status'],
-            myAgendaStatusChanged: (bool? value) {
-              setState(() {
-                db.myAgendaList[index] = {
-                  'title': agenda['title'],
-                  'status': value!
-                };
-              });
-              db.updateAgendaDB();
-            },
-            edit: (BuildContext context) {
-              editAgenda(index);
-            },
-            delete: (BuildContext context) {
-              confirmDelete(index);
-            },
-          );
-        },
-        itemCount: db.myAgendaList.length,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.only(
+                    bottom: 100), // Add bottom padding for FAB
+                physics: const BouncingScrollPhysics(),
+                itemCount: db.myAgendaList.length,
+                itemBuilder: (context, index) {
+                  final agenda = db.myAgendaList[index];
+                  return MyAgendaTile(
+                    myAgendaTitle: agenda['title'],
+                    myAgendaStatus: agenda['status'],
+                    deadline: agenda['deadline'] != null
+                        ? DateTime.parse(agenda['deadline'])
+                        : DateTime.now().add(const Duration(
+                            days: 7)), // Default deadline: 7 days from now
+                    myAgendaStatusChanged: (value) {
+                      setState(() {
+                        db.myAgendaList[index]['status'] = value;
+                      });
+                      db.updateAgendaDB();
+                      if (value == true) {
+                        _notificationService.cancelNotifications(index);
+                      } else {
+                        _scheduleNotification(index);
+                      }
+                    },
+                    edit: (context) => editAgenda(index),
+                    delete: (context) => confirmDelete(index),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: createNewAgenda,
