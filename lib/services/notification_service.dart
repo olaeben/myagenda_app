@@ -1,44 +1,45 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:intl/intl.dart';
 import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/data/latest.dart' as tz;
 
 class NotificationService {
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
 
+  static Future<void> onDidReceiveNotification(
+      NotificationResponse notificationResponse) async {}
+
   Future<void> initNotification() async {
-    tz.initializeTimeZones();
+    // Initialize settings for Android
+    const AndroidInitializationSettings androidInitializationSettings =
+        AndroidInitializationSettings('@mipmap/notification_icon');
 
     // Initialize settings for iOS
-    const DarwinInitializationSettings initializationSettingsIOS =
+    const DarwinInitializationSettings iOSinitializationSettings =
         DarwinInitializationSettings(
       requestSoundPermission: true,
       requestBadgePermission: true,
       requestAlertPermission: true,
     );
 
+    // Combine Android and iOS Initialization Settings
     const InitializationSettings initializationSettings =
         InitializationSettings(
-      iOS: initializationSettingsIOS,
+      android: androidInitializationSettings,
+      iOS: iOSinitializationSettings,
     );
 
     await _notifications.initialize(
       initializationSettings,
-      onDidReceiveNotificationResponse: (details) async {
-        // Handle notification tap
-      },
+      onDidReceiveNotificationResponse: onDidReceiveNotification,
+      onDidReceiveBackgroundNotificationResponse: onDidReceiveNotification,
     );
 
-    // Request permissions again after initialization
+    // Request permissions for android
     await _notifications
         .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
   }
 
   Future<void> scheduleDeadlineNotifications({
@@ -83,8 +84,7 @@ class NotificationService {
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
-        matchDateTimeComponents:
-            DateTimeComponents.time, // Repeats daily at same time
+        matchDateTimeComponents: DateTimeComponents.time,
       );
     }
 

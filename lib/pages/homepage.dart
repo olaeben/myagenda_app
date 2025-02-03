@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
@@ -7,7 +8,6 @@ import 'package:myagenda_app/util/dialogue_box.dart';
 import 'package:myagenda_app/util/myagenda_tile.dart';
 import 'package:myagenda_app/util/mybutton.dart';
 import 'dart:async';
-import 'package:flutter/services.dart'; // Add this import at the top
 
 class HomePage extends StatefulWidget {
   final VoidCallback onToggleTheme;
@@ -205,10 +205,9 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 2, // Add elevation for visual separation
-        surfaceTintColor: Colors.transparent, // Remove surface tint
+        elevation: 2,
+        surfaceTintColor: Colors.transparent,
         flexibleSpace: Container(
-          // Add background fill
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
           ),
@@ -259,8 +258,7 @@ class _HomePageState extends State<HomePage> {
           children: [
             Expanded(
               child: ListView.builder(
-                padding: const EdgeInsets.only(
-                    bottom: 100), // Add bottom padding for FAB
+                padding: const EdgeInsets.only(bottom: 100),
                 physics: const BouncingScrollPhysics(),
                 itemCount: db.myAgendaList.length,
                 itemBuilder: (context, index) {

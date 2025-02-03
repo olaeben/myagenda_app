@@ -146,7 +146,7 @@ class _MyAgendaTileState extends State<MyAgendaTile> {
             } else {
               widget.edit?.call(context);
             }
-            return false; // Keep the item
+            return false;
           },
           child: Container(
             padding: const EdgeInsets.all(16),
