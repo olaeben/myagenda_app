@@ -26,17 +26,17 @@ A modern, minimalist task management app built with Flutter that helps you stay 
   - Mark Agendas as completed
   - Automatic status tracking (Pending, Completed, Expired)
   - Multi-select mode for bulk actions (complete/delete multiple agendas)
-- **Categories
+- **Categories**:
   - Organize agendas by categories
   - Create custom categories
   - Delete categories (except Default)
   - Agendas from deleted categories automatically move to Default
-- **Filtering System
+- **Filtering System**:
   - Filter by Category
   - Filter by Date Range
   - Filter by Status (Completed, Pending, Expired)
   - Clear all filters with one click
-- **Visual Feedback
+- **Visual Feedback**:
   - Color-coded status indicators
     - Green: Completed
     - Amber: Pending
@@ -44,12 +44,12 @@ A modern, minimalist task management app built with Flutter that helps you stay 
   - Animated icons for actions
   - Swipe actions for quick delete/edit
   - Line-through text for completed tasks
-- **Smart Features
+- **Smart Features**:
   - Automatic status reset when editing completed tasks with future dates
   - Deadline validation to prevent past dates
   - Local notifications for upcoming deadlines
   - Statistics card showing task distribution
-- **UI/UX
+- **UI/UX**:
   - Material Design 3
   - Dark/Light theme support
   - Responsive layout
