@@ -10,7 +10,7 @@ A modern, minimalist task management app built with Flutter that helps you stay 
 |------------|-----------|
 | <img src="assets/snapshots/light_mode.png" width="250" alt="Light Mode"> | <img src="assets/snapshots/dark_mode.png" width="250" alt="Dark Mode"> |
 | Task Actions | Notifications |
-| <img src="assets/snapshots/myagenda.gif" width="250" alt="Task Actions"> | <img src="assets/snapshots/notifications.png" width="250" alt="Notifications"> |
+| <img src="assets/snapshots/myagenda.gif" width="250" alt="Task Actions"> | <img src="assets/snapshots/notification.png" width="250" alt="Notifications"> |
 
 ## Features
 
@@ -20,14 +20,42 @@ A modern, minimalist task management app built with Flutter that helps you stay 
   - Daily reminders for upcoming tasks
   - 15-minutes to deadline reminder notifications
   - Deadline notifications
-- **Task Management**:
-  - Add, edit, and delete tasks
-  - Mark tasks as complete
-  - Swipe gestures for quick actions (left to right for delete and right to left to edit)
-- **Deadline Tracking**:
-  - Visual indicators for expired tasks
-  - Countdown display (Today, Tomorrow, or date)
-- **Theme Support**: Toggle between light and dark themes
+- **Agenda Management**:
+  - Create, edit, and delete agendas
+  - Set deadlines with date and time
+  - Mark Agendas as completed
+  - Automatic status tracking (Pending, Completed, Expired)
+  - Multi-select mode for bulk actions (complete/delete multiple agendas)
+- **Categories
+  - Organize agendas by categories
+  - Create custom categories
+  - Delete categories (except Default)
+  - Agendas from deleted categories automatically move to Default
+- **Filtering System
+  - Filter by Category
+  - Filter by Date Range
+  - Filter by Status (Completed, Pending, Expired)
+  - Clear all filters with one click
+- **Visual Feedback
+  - Color-coded status indicators
+    - Green: Completed
+    - Amber: Pending
+    - Red: Expired
+  - Animated icons for actions
+  - Swipe actions for quick delete/edit
+  - Line-through text for completed tasks
+- **Smart Features
+  - Automatic status reset when editing completed tasks with future dates
+  - Deadline validation to prevent past dates
+  - Local notifications for upcoming deadlines
+  - Statistics card showing task distribution
+- **UI/UX
+  - Material Design 3
+  - Dark/Light theme support
+  - Responsive layout
+  - Smooth animations
+  - Custom font (Poppins)
+  - Intuitive gesture controls
 
 ## Getting Started
 
