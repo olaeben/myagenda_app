@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'pages/splash_screen.dart';
+import 'models/agenda_adapter.dart';
 import 'services/notification_service.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
@@ -10,7 +11,10 @@ void main() async {
   await NotificationService().initNotification();
   tz.initializeTimeZones();
   await Hive.initFlutter();
+  Hive.registerAdapter(AgendaAdapter());
+
   await Hive.openBox('myAgenda');
+  await Hive.openBox('appSettings');
 
   runApp(const MyApp());
 }
@@ -52,8 +56,20 @@ class _MyAppState extends State<MyApp> {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'My Agenda',
-          theme: ThemeData.light(),
-          darkTheme: ThemeData.dark(),
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.brown.shade100,
+              brightness: Brightness.light,
+            ),
+            useMaterial3: true,
+          ),
+          darkTheme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.brown.shade100,
+              brightness: Brightness.dark,
+            ),
+            useMaterial3: true,
+          ),
           themeMode: currentThemeMode,
           home: SplashScreen(
             onToggleTheme: _toggleTheme,

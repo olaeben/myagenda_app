@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:myagenda_app/pages/homepage.dart';
 import 'package:rive_animated_icon/rive_animated_icon.dart';
 
+import '../widgets/custom_text.dart';
+
 class SplashScreen extends StatefulWidget {
   final VoidCallback onToggleTheme;
 
@@ -68,26 +70,18 @@ class _SplashScreenState extends State<SplashScreen>
               ),
             ),
             const SizedBox(height: 32),
-            Text(
+            CustomText(
               'M Y  A G E N D A',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Poppins',
-                color: colorScheme.onSurface,
-              ),
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
             ),
             const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Text(
+              child: CustomText2(
                 'Simplify your life, one task at a time.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Poppins',
-                  color: colorScheme.onSurface,
-                ),
+                color: colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 60),
@@ -106,12 +100,9 @@ class _SplashScreenState extends State<SplashScreen>
                 Icons.arrow_forward,
                 color: colorScheme.onSurface,
               ),
-              label: Text(
+              label: CustomText2(
                 'Let\'s begin',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  color: colorScheme.onSurface,
-                ),
+                color: colorScheme.onSurface,
               ),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(

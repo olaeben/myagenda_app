@@ -12,7 +12,7 @@ class NotificationService {
   Future<void> initNotification() async {
     // Initialize settings for Android
     const AndroidInitializationSettings androidInitializationSettings =
-        AndroidInitializationSettings('@mipmap/notification_icon');
+        AndroidInitializationSettings('@drawable/notification_icon');
 
     // Initialize settings for iOS
     const DarwinInitializationSettings iOSinitializationSettings =
