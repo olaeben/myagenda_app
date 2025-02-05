@@ -1,13 +1,15 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
-import 'package:myagenda_app/data/myagenda_db.dart';
-import 'package:myagenda_app/services/notification_service.dart';
-import 'package:myagenda_app/util/dialogue_box.dart';
-import 'package:myagenda_app/util/myagenda_tile.dart';
-import 'package:myagenda_app/util/mybutton.dart';
+import 'package:myagenda_app/widgets/custom_text.dart';
+import '../models/agenda_model.dart';
+import '../util/dialogue_box.dart';
+import '../widgets/agenda_tile.dart';
+import '../widgets/filter_dialog.dart';
+import '../widgets/search_bar.dart';
+import '../widgets/stats_card.dart';
+import '../widgets/filter_bar.dart';
+import '../services/notification_service.dart';
 import 'dart:async';
-import 'package:flutter/services.dart'; // Add this import at the top
 
 class HomePage extends StatefulWidget {
   final VoidCallback onToggleTheme;
@@ -19,25 +21,26 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final _controller = TextEditingController();
+  final _searchController = TextEditingController();
   final NotificationService _notificationService = NotificationService();
-  final MyagendaDb db = MyagendaDb();
   final _myAgenda = Hive.box('myAgenda');
+  List<AgendaModel> _agendas = [];
+  List<AgendaModel> _filteredAgendas = [];
+  bool _isMultiSelectMode = false;
+  String? _selectedCategory;
+  DateTimeRange? _selectedDateRange;
+  String? _selectedStatus;
+  Set<String> _categories = {'Default'};
   Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
-    if (_myAgenda.isEmpty) {
-      db.createInitialAgendaDB();
-    } else {
-      db.loadAgendaDB();
-    }
+    _loadAgendas();
     _notificationService.initNotification();
-    _checkExpiredAgendas();
 
-    // Add periodic check for expired agendas
-    _refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+    _checkExpiredAgendas();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
       _checkExpiredAgendas();
     });
   }
@@ -48,257 +51,496 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+  void _loadAgendas() {
+    final List<dynamic> agendaData = _myAgenda.get('myAgenda') ?? [];
+    _agendas = agendaData.map((data) {
+      final Map<String, dynamic> jsonData = Map<String, dynamic>.from(data);
+      return AgendaModel.fromJson(jsonData);
+    }).toList();
+    _updateFilteredAgendas();
+    _updateCategories();
+  }
+
+  void _updateCategories() {
+    _categories = {'Default'};
+    for (var agenda in _agendas) {
+      if (agenda.category != null && agenda.category!.isNotEmpty) {
+        _categories.add(agenda.category!);
+      }
+    }
+  }
+
+  void _updateFilteredAgendas() {
+    _filteredAgendas = _agendas.where((agenda) {
+      // Search filter
+      if (_searchController.text.isNotEmpty) {
+        final searchTerm = _searchController.text.toLowerCase();
+        if (!agenda.title.toLowerCase().contains(searchTerm) &&
+            !(agenda.category?.toLowerCase().contains(searchTerm) ?? false)) {
+          return false;
+        }
+      }
+
+      // Category filter
+      if (_selectedCategory != null && _selectedCategory != 'Default') {
+        if (agenda.category != _selectedCategory) {
+          return false;
+        }
+      }
+
+      // Date range filter
+      if (_selectedDateRange != null) {
+        if (agenda.deadline.isBefore(_selectedDateRange!.start) ||
+            agenda.deadline.isAfter(_selectedDateRange!.end)) {
+          return false;
+        }
+      }
+
+      // Status filter
+      if (_selectedStatus != null) {
+        final now = DateTime.now();
+        final isExpired = now.isAfter(agenda.deadline);
+        final status = isExpired
+            ? 'Expired'
+            : agenda.status
+                ? 'Completed'
+                : 'Pending';
+        if (status != _selectedStatus) {
+          return false;
+        }
+      }
+
+      return true;
+    }).toList();
+
+    setState(() {});
+  }
+
+  Map<String, double> _calculateStats() {
+    if (_agendas.isEmpty) {
+      return {
+        'completed': 0,
+        'pending': 0,
+        'expired': 0,
+      };
+    }
+
+    final now = DateTime.now();
+    int completed = 0;
+    int pending = 0;
+    int expired = 0;
+
+    for (var agenda in _agendas) {
+      if (agenda.status) {
+        completed++;
+      } else if (now.isAfter(agenda.deadline)) {
+        expired++;
+      } else {
+        pending++;
+      }
+    }
+
+    final total = _agendas.length.toDouble();
+    return {
+      'completed': (completed / total) * 100,
+      'pending': (pending / total) * 100,
+      'expired': (expired / total) * 100,
+    };
+  }
+
+  void _toggleMultiSelect(AgendaModel agenda) {
+    setState(() {
+      if (!_isMultiSelectMode) {
+        _isMultiSelectMode = true;
+        agenda.selected = true;
+      } else {
+        agenda.selected = !agenda.selected;
+        if (_filteredAgendas.every((a) => !a.selected)) {
+          _isMultiSelectMode = false;
+        }
+      }
+    });
+  }
+
+  void _bulkComplete() {
+    setState(() {
+      for (var agenda in _filteredAgendas) {
+        if (agenda.selected) {
+          agenda.status = true;
+          agenda.selected = false;
+        }
+      }
+      _isMultiSelectMode = false;
+      _saveAgendas();
+    });
+  }
+
+  void _bulkDelete() {
+    setState(() {
+      // Cancel notifications before deleting
+      for (var agenda in _filteredAgendas.where((a) => a.selected)) {
+        _notificationService.cancelNotifications(agenda.title.hashCode);
+      }
+
+      _agendas.removeWhere(
+          (agenda) => _filteredAgendas.any((a) => a.selected && a == agenda));
+      _isMultiSelectMode = false;
+      _saveAgendas();
+    });
+  }
+
+  void _saveAgendas() {
+    final List<Map<String, dynamic>> agendaData =
+        _agendas.map((agenda) => agenda.toJson()).toList();
+    _myAgenda.put('myAgenda', agendaData);
+    _updateFilteredAgendas();
+    _updateCategories();
+  }
+
   void _checkExpiredAgendas() {
     final now = DateTime.now();
     bool needsUpdate = false;
 
-    for (int i = 0; i < db.myAgendaList.length; i++) {
-      final agenda = db.myAgendaList[i];
-      if (!agenda['status'] && agenda['deadline'] != null) {
-        try {
-          final deadline = DateTime.parse(agenda['deadline']);
-          if (now.isAfter(deadline)) {
-            db.myAgendaList[i]['status'] = true;
-            needsUpdate = true;
-            _notificationService.cancelNotifications(i);
-          }
-        } catch (e) {
-          db.myAgendaList[i]['deadline'] =
-              DateTime.now().add(const Duration(days: 7)).toIso8601String();
-          needsUpdate = true;
-        }
+    for (var agenda in _agendas) {
+      if (!agenda.status && now.isAfter(agenda.deadline)) {
+        needsUpdate = true;
+        _notificationService.cancelNotifications(agenda.title.hashCode);
       }
     }
 
     if (needsUpdate) {
-      setState(() {});
-      db.updateAgendaDB();
-    }
-  }
-
-  // Update the _scheduleNotification method
-  void _scheduleNotification(int index) {
-    final agenda = db.myAgendaList[index];
-    if (agenda['deadline'] == null) {
-      agenda['deadline'] =
-          DateTime.now().add(const Duration(days: 7)).toIso8601String();
-      db.updateAgendaDB();
-    }
-
-    final deadline = DateTime.parse(agenda['deadline']);
-    final title = agenda['title'].toString().split(' ').take(2).join(' ');
-
-    if (DateTime.now().isAfter(deadline)) {
       setState(() {
-        db.myAgendaList[index]['status'] = true;
+        _updateFilteredAgendas();
       });
-      db.updateAgendaDB();
-      return;
     }
-
-    _notificationService.cancelNotifications(index);
-    if (!agenda['status']) {
-      _notificationService.scheduleDeadlineNotifications(
-        id: index,
-        title: title,
-        deadline: deadline,
-      );
-    }
-  }
-
-  void createNewAgenda() {
-    _controller.clear();
-    showDialog(
-      context: context,
-      builder: (context) {
-        return DialogueBox(
-          key: UniqueKey(),
-          controller: _controller,
-        );
-      },
-    ).then((value) {
-      if (value != null) {
-        setState(() {
-          final newAgenda = {
-            'title': value['text'],
-            'status': false,
-            'deadline': (value['deadline'] ??
-                    DateTime.now().add(const Duration(days: 7)))
-                .toIso8601String(),
-          };
-          db.myAgendaList.insert(0, newAgenda);
-        });
-        db.updateAgendaDB();
-        _scheduleNotification(0);
-      }
-    });
-  }
-
-  void editAgenda(int index) {
-    final agenda = db.myAgendaList[index];
-    _controller.text = agenda['title'];
-    showDialog(
-      context: context,
-      builder: (context) {
-        return DialogueBox(
-          key: UniqueKey(),
-          controller: _controller,
-          initialDeadline: agenda['deadline'] != null
-              ? DateTime.parse(agenda['deadline'])
-              : DateTime.now().add(const Duration(days: 7)),
-        );
-      },
-    ).then((value) {
-      if (value != null) {
-        setState(() {
-          db.myAgendaList[index] = {
-            'title': value['text'],
-            'status': false, // Reset status to unchecked
-            'deadline': value['deadline'].toIso8601String(),
-          };
-        });
-        db.updateAgendaDB();
-        _scheduleNotification(index);
-      }
-    });
-  }
-
-  void confirmDelete(int index) {
-    final isLightMode = Theme.of(context).brightness == Brightness.light;
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text(
-            'Are you sure you want to delete this Agenda?',
-            style: TextStyle(fontSize: 16, fontFamily: 'Poppins'),
-          ),
-          actions: [
-            MyButton(
-              text: 'Cancel',
-              textColor: isLightMode ? Colors.black : Colors.white,
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            MyButton(
-              text: 'Yes',
-              textColor: isLightMode ? Colors.black : Colors.white,
-              onPressed: () {
-                setState(() {
-                  _notificationService.cancelNotifications(index);
-                  db.myAgendaList.removeAt(index);
-                });
-                db.updateAgendaDB();
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isLightMode = Theme.of(context).brightness == Brightness.light;
+    final stats = _calculateStats();
+    final selectedCount = _filteredAgendas.where((a) => a.selected).length;
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
+        centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 2, // Add elevation for visual separation
-        surfaceTintColor: Colors.transparent, // Remove surface tint
-        flexibleSpace: Container(
-          // Add background fill
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-          ),
-        ),
-        centerTitle: false,
-        systemOverlayStyle: isLightMode
-            ? SystemUiOverlayStyle.dark.copyWith(
-                statusBarColor: Colors.transparent,
-                statusBarIconBrightness: Brightness.dark,
-              )
-            : SystemUiOverlayStyle.light.copyWith(
-                statusBarColor: Colors.transparent,
-                statusBarIconBrightness: Brightness.light,
-              ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(0, 0, 20, 0),
-            child: Row(
-              children: [
-                Icon(
-                  isLightMode ? Icons.light_mode : Icons.dark_mode,
-                  color: isLightMode ? Colors.black : Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        leading: _isMultiSelectMode
+            ? IconButton(
+                icon: Icon(
+                  _filteredAgendas.every((a) => a.selected)
+                      ? Icons.check_circle
+                      : Icons.check_circle_outline,
                 ),
-                const SizedBox(width: 8),
-                CupertinoSwitch(
-                  value: isLightMode,
-                  activeTrackColor: Colors.grey,
-                  onChanged: (value) => widget.onToggleTheme(),
+                onPressed: () {
+                  setState(() {
+                    bool allSelected =
+                        _filteredAgendas.every((a) => a.selected);
+                    for (var agenda in _filteredAgendas) {
+                      agenda.selected = !allSelected;
+                    }
+                    if (!allSelected && _filteredAgendas.isNotEmpty) {
+                      _isMultiSelectMode = true;
+                    } else if (allSelected) {
+                      _isMultiSelectMode = false;
+                    }
+                  });
+                },
+              )
+            : null,
+        title: _isMultiSelectMode
+            ? CustomText('$selectedCount selected')
+            : CustomText('M Y  A G E N D A', fontSize: 20),
+        actions: [
+          if (_isMultiSelectMode)
+            TextButton(
+                onPressed: () {
+                  setState(() {
+                    for (var agenda in _filteredAgendas) {
+                      agenda.selected = false;
+                    }
+                    _isMultiSelectMode = false;
+                  });
+                },
+                child: CustomText('Cancel'))
+          else
+            IconButton(
+              icon: Icon(Theme.of(context).brightness == Brightness.light
+                  ? Icons.dark_mode
+                  : Icons.light_mode),
+              onPressed: widget.onToggleTheme,
+            ),
+        ],
+      ),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            children: [
+                              AgendaSearchBar(
+                                controller: _searchController,
+                                onChanged: (value) => _updateFilteredAgendas(),
+                                onClear: () {
+                                  _searchController.clear();
+                                  _updateFilteredAgendas();
+                                },
+                              ),
+                              SizedBox(height: 16),
+                              StatsCard(
+                                totalAgendas: _agendas.length,
+                                completedPercentage: stats['completed']!,
+                                pendingPercentage: stats['pending']!,
+                                expiredPercentage: stats['expired']!,
+                              ),
+                              SizedBox(height: 16),
+                              FilterBar(
+                                categories: _categories.toList(),
+                                selectedCategory: _selectedCategory,
+                                selectedDateRange: _selectedDateRange,
+                                selectedStatus: _selectedStatus,
+                                onCategorySelected: (category) {
+                                  setState(() {
+                                    _selectedCategory = category;
+                                    _updateFilteredAgendas();
+                                  });
+                                },
+                                onDateRangeSelected: (dateRange) {
+                                  setState(() {
+                                    _selectedDateRange = dateRange;
+                                    _updateFilteredAgendas();
+                                  });
+                                },
+                                onStatusSelected: (status) {
+                                  setState(() {
+                                    _selectedStatus = status;
+                                    _updateFilteredAgendas();
+                                  });
+                                },
+                                onClearFilters: () {
+                                  setState(() {
+                                    _selectedCategory = null;
+                                    _selectedDateRange = null;
+                                    _selectedStatus = null;
+                                    _updateFilteredAgendas();
+                                  });
+                                },
+                                onCategoryDeleted: (deletedCategory) {
+                                  setState(() {
+                                    if (deletedCategory != 'Default') {
+                                      _categories.remove(deletedCategory);
+                                      for (var agenda in _agendas) {
+                                        if (agenda.category ==
+                                            deletedCategory) {
+                                          agenda.category = 'Default';
+                                        }
+                                      }
+                                      if (_selectedCategory ==
+                                          deletedCategory) {
+                                        _selectedCategory = 'Default';
+                                      }
+                                      _saveAgendas();
+                                    }
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
+                          itemCount: _filteredAgendas.length,
+                          itemBuilder: (context, index) {
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                  bottom: index == _filteredAgendas.length - 1
+                                      ? 80
+                                      : 0),
+                              child: AgendaTile(
+                                agenda: _filteredAgendas[index],
+                                onStatusChanged: (value) {
+                                  setState(() {
+                                    _filteredAgendas[index].status =
+                                        value ?? false;
+                                    _saveAgendas();
+                                  });
+                                },
+                                onLongPress: () =>
+                                    _toggleMultiSelect(_filteredAgendas[index]),
+                                onTap: _isMultiSelectMode
+                                    ? () => _toggleMultiSelect(
+                                        _filteredAgendas[index])
+                                    : null,
+                                showCheckbox: _isMultiSelectMode,
+                                onEdit: () => _showAddAgendaDialog(
+                                  context,
+                                  agenda: _filteredAgendas[index],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
-          ),
-        ],
-        title: Padding(
-          padding: const EdgeInsets.only(left: 14),
-          child: Text(
-            'M Y  A G E N D A',
-            style: TextStyle(
-              color: isLightMode ? Colors.black : Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.only(
-                    bottom: 100), // Add bottom padding for FAB
-                physics: const BouncingScrollPhysics(),
-                itemCount: db.myAgendaList.length,
-                itemBuilder: (context, index) {
-                  final agenda = db.myAgendaList[index];
-                  return MyAgendaTile(
-                    myAgendaTitle: agenda['title'],
-                    myAgendaStatus: agenda['status'],
-                    deadline: agenda['deadline'] != null
-                        ? DateTime.parse(agenda['deadline'])
-                        : DateTime.now().add(const Duration(
-                            days: 7)), // Default deadline: 7 days from now
-                    myAgendaStatusChanged: (value) {
-                      setState(() {
-                        db.myAgendaList[index]['status'] = value;
-                      });
-                      db.updateAgendaDB();
-                      if (value == true) {
-                        _notificationService.cancelNotifications(index);
-                      } else {
-                        _scheduleNotification(index);
-                      }
-                    },
-                    edit: (context) => editAgenda(index),
-                    delete: (context) => confirmDelete(index),
-                  );
-                },
+            if (_isMultiSelectMode)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  color: Theme.of(context).colorScheme.surface,
+                  padding: EdgeInsets.all(16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.check),
+                        onPressed: _bulkComplete,
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.delete),
+                        onPressed: _bulkDelete,
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: createNewAgenda,
-        backgroundColor: isLightMode ? Colors.black : Colors.white,
-        child: Icon(
-          Icons.add,
-          color: isLightMode ? Colors.white : Colors.black,
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(bottom: _isMultiSelectMode ? 72 : 0),
+        child: FloatingActionButton(
+          onPressed: () => _showAddAgendaDialog(context),
+          child: Icon(Icons.add),
         ),
+      ),
+    );
+  }
+
+  void _showAddAgendaDialog(BuildContext context, {AgendaModel? agenda}) {
+    final controller = TextEditingController(text: agenda?.title);
+    String? initialCategory =
+        agenda?.category ?? _selectedCategory ?? 'Default';
+
+    showDialog(
+      context: context,
+      builder: (context) => DialogueBox(
+        controller: controller,
+        initialCategory: initialCategory,
+        initialDeadline: agenda?.deadline,
+        categories: _categories.toList(),
+        onNewCategoryAdded: (newCategory) {
+          setState(() {
+            _categories.add(newCategory);
+          });
+        },
+        onCategoryDeleted: (deletedCategory) {
+          setState(() {
+            if (deletedCategory != 'Default') {
+              _categories.remove(deletedCategory);
+              // Update agendas with deleted category to use 'Default'
+              for (var agenda in _agendas) {
+                if (agenda.category == deletedCategory) {
+                  agenda.category = 'Default';
+                }
+              }
+              if (_selectedCategory == deletedCategory) {
+                _selectedCategory = 'Default';
+              }
+              _saveAgendas();
+            }
+          });
+        },
+      ),
+    ).then((value) {
+      if (value != null) {
+        setState(() {
+          if (agenda != null) {
+            // Cancel existing notifications for this agenda
+            _notificationService.cancelNotifications(agenda.title.hashCode);
+
+            // Edit existing agenda
+            agenda.title = value['text'];
+            agenda.category = value['category'];
+            agenda.deadline = value['deadline'];
+
+            // Reset status if agenda was completed and new deadline is in future
+            if (agenda.status && agenda.deadline.isAfter(DateTime.now())) {
+              agenda.status = false;
+            }
+
+            // Schedule new notifications
+            _notificationService.scheduleDeadlineNotifications(
+              id: agenda.title.hashCode,
+              title: agenda.title,
+              deadline: agenda.deadline,
+            );
+          } else {
+            // Add new agenda
+            final newAgenda = AgendaModel(
+              title: value['text'],
+              category: value['category'],
+              status: false,
+              deadline: value['deadline'],
+            );
+            _agendas.insert(0, newAgenda);
+
+            // Schedule notifications for new agenda
+            _notificationService.scheduleDeadlineNotifications(
+              id: newAgenda.title.hashCode,
+              title: newAgenda.title,
+              deadline: newAgenda.deadline,
+            );
+          }
+          _saveAgendas();
+        });
+      }
+    });
+  }
+
+  void _showCategoryFilter(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => FilterDialog(
+        options: _categories.toList(),
+        selectedOption: _selectedCategory,
+        onOptionSelected: (category) {
+          setState(() {
+            _selectedCategory = category;
+            _updateFilteredAgendas();
+          });
+        },
+        onCategoryDeleted: (deletedCategory) {
+          setState(() {
+            if (deletedCategory != 'Default') {
+              _categories.remove(deletedCategory);
+              for (var agenda in _agendas) {
+                if (agenda.category == deletedCategory) {
+                  agenda.category = 'Default';
+                }
+              }
+              if (_selectedCategory == deletedCategory) {
+                _selectedCategory = 'Default';
+              }
+              _saveAgendas();
+            }
+          });
+        },
       ),
     );
   }
