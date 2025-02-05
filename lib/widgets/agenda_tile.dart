@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:rive_animated_icon/rive_animated_icon.dart';
-
 import '../models/agenda_model.dart';
 import 'custom_text.dart';
 
@@ -81,9 +80,7 @@ class AgendaTile extends StatelessWidget {
             onHover: (value) {}),
       ),
       onDismissed: (direction) {
-        if (direction == DismissDirection.startToEnd) {
-          // Delete handled by confirmDismiss
-        }
+        if (direction == DismissDirection.startToEnd) {}
       },
       dismissThresholds: const {
         DismissDirection.startToEnd: 0.4,

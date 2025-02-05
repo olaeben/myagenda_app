@@ -93,8 +93,7 @@ class _CategorySelectorState extends State<CategorySelector> {
       children: [
         ...widget.categories.map(
           (category) => category != 'Default'
-              ? // Don't allow deleting Default category
-              Dismissible(
+              ? Dismissible(
                   key: Key(category),
                   direction: DismissDirection.endToStart,
                   confirmDismiss: (direction) async {

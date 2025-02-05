@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-
-import 'custom_progress_indicator.dart';
-import 'custom_text.dart';
+import 'circular_status_indicator.dart';
 
 class StatsCard extends StatelessWidget {
   final int totalAgendas;
@@ -26,16 +23,19 @@ class StatsCard extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            // Progress Circle
             SizedBox(
               width: 120,
               height: 120,
               child: Stack(
                 children: [
-                  CustomProgressIndicator(
-                    completedPercentage: completedPercentage,
-                    pendingPercentage: pendingPercentage,
-                    expiredPercentage: expiredPercentage,
+                  CircularStatusIndicator(
+                    values: {
+                      'Completed': completedPercentage,
+                      'Pending': pendingPercentage,
+                      'Expired': expiredPercentage,
+                    },
+                    size: 120,
+                    strokeWidth: 15,
                   ),
                 ],
               ),
@@ -45,7 +45,7 @@ class StatsCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Total: $totalAgendas tasks',
+                  'Total: $totalAgendas Agendas',
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontWeight: FontWeight.bold,
