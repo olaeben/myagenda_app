@@ -1,6 +1,8 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:intl/intl.dart';
 import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:flutter/foundation.dart' show debugPrint;
 
 class NotificationService {
   final FlutterLocalNotificationsPlugin _notifications =
@@ -10,6 +12,7 @@ class NotificationService {
       NotificationResponse notificationResponse) async {}
 
   Future<void> initNotification() async {
+    tz.initializeTimeZones();
     // Initialize settings for Android
     const AndroidInitializationSettings androidInitializationSettings =
         AndroidInitializationSettings('@drawable/notification_icon');
@@ -47,55 +50,79 @@ class NotificationService {
     required String title,
     required DateTime deadline,
   }) async {
-    final now = DateTime.now();
+    try {
+      final now = DateTime.now();
+      final location = tz.local;
 
-    // Schedule daily reminder if deadline is in the future
-    if (deadline.isAfter(now.add(const Duration(days: 1)))) {
-      final dailyReminder = DateTime(
-        now.year,
-        now.month,
-        now.day,
-        deadline.hour,
-        deadline.minute,
-      ).add(const Duration(days: 1)); // Start from tomorrow
+      // Schedule daily reminder if deadline is in the future
+      if (deadline.isAfter(now.add(const Duration(days: 1)))) {
+        final dailyReminder = DateTime(
+          now.year,
+          now.month,
+          now.day,
+          deadline.hour,
+          deadline.minute,
+        ).add(const Duration(days: 1));
 
-      await _notifications.zonedSchedule(
-        id + 2000, // Different ID for daily reminder
-        'Daily Agenda Reminder',
-        '$title is due on ${DateFormat('MMM d, HH:mm').format(deadline)}',
-        tz.TZDateTime.from(dailyReminder, tz.local),
-        NotificationDetails(
-          iOS: const DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-            sound: 'default',
-            interruptionLevel: InterruptionLevel.timeSensitive,
-          ),
-          android: const AndroidNotificationDetails(
-            'myagenda_daily',
-            'My Agenda Daily Reminders',
-            channelDescription: 'Daily reminders for upcoming agenda items',
-            importance: Importance.high,
-            priority: Priority.high,
-            icon: 'notification_icon',
-          ),
-        ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        matchDateTimeComponents: DateTimeComponents.time,
-      );
+        await _scheduleNotification(
+          id: id + 2000,
+          title: 'Daily Agenda Reminder',
+          body:
+              '$title is due on ${DateFormat('MMM d, HH:mm').format(deadline)}',
+          scheduledDate: tz.TZDateTime.from(dailyReminder, location),
+          matchDateTimeComponents: DateTimeComponents.time,
+        );
+      }
+
+      // Schedule 15-minute reminder
+      final reminderTime = deadline.subtract(const Duration(minutes: 15));
+      if (reminderTime.isAfter(now)) {
+        await _scheduleNotification(
+          id: id,
+          title: 'Upcoming Agenda',
+          body: '$title is due in 15 minutes',
+          scheduledDate: tz.TZDateTime.from(reminderTime, location),
+        );
+      }
+
+      // Immediate notification for close deadlines
+      if (deadline.difference(now).inMinutes < 15 && deadline.isAfter(now)) {
+        await _scheduleNotification(
+          id: id,
+          title: 'Upcoming Agenda',
+          body: '$title is due soon at ${DateFormat('HH:mm').format(deadline)}',
+          scheduledDate:
+              tz.TZDateTime.from(now.add(const Duration(seconds: 2)), location),
+        );
+      }
+
+      // Deadline notification
+      if (deadline.isAfter(now)) {
+        await _scheduleNotification(
+          id: id + 1000,
+          title: 'Agenda Due',
+          body: '$title deadline has arrived',
+          scheduledDate: tz.TZDateTime.from(deadline, location),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error scheduling notifications: $e');
     }
+  }
 
-    // Schedule notification 15 minutes before deadline
-    final reminderTime = deadline.subtract(const Duration(minutes: 15));
-    if (reminderTime.isAfter(now)) {
+  Future<void> _scheduleNotification({
+    required int id,
+    required String title,
+    required String body,
+    required tz.TZDateTime scheduledDate,
+    DateTimeComponents? matchDateTimeComponents,
+  }) async {
+    try {
       await _notifications.zonedSchedule(
         id,
-        'Upcoming Agenda',
-        '$title is due in 15 minutes',
-        tz.TZDateTime.from(reminderTime, tz.local),
+        title,
+        body,
+        scheduledDate,
         NotificationDetails(
           iOS: const DarwinNotificationDetails(
             presentAlert: true,
@@ -116,67 +143,11 @@ class NotificationService {
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: matchDateTimeComponents,
       );
-    }
-
-    // Schedule immediate notification if deadline is less than 15 minutes away
-    if (deadline.difference(now).inMinutes < 15 && deadline.isAfter(now)) {
-      await _notifications.zonedSchedule(
-        id,
-        'Upcoming Agenda',
-        '$title is due soon at ${DateFormat('HH:mm').format(deadline)}',
-        tz.TZDateTime.from(now.add(const Duration(seconds: 2)), tz.local),
-        NotificationDetails(
-          iOS: const DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-            sound: 'default',
-            interruptionLevel: InterruptionLevel.timeSensitive,
-          ),
-          android: const AndroidNotificationDetails(
-            'myagenda_notifications',
-            'My Agenda Notifications',
-            channelDescription: 'Notifications for My Agenda app',
-            importance: Importance.high,
-            priority: Priority.high,
-            icon: 'notification_icon',
-          ),
-        ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-      );
-    }
-
-    // Schedule notification at deadline
-    if (deadline.isAfter(now)) {
-      await _notifications.zonedSchedule(
-        id + 1000,
-        'Agenda Due',
-        '$title deadline has arrived',
-        tz.TZDateTime.from(deadline, tz.local),
-        NotificationDetails(
-          iOS: const DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-            sound: 'default',
-            interruptionLevel: InterruptionLevel.timeSensitive,
-          ),
-          android: const AndroidNotificationDetails(
-            'myagenda_notifications',
-            'My Agenda Notifications',
-            channelDescription: 'Notifications for My Agenda app',
-            importance: Importance.high,
-            priority: Priority.high,
-            icon: 'notification_icon',
-          ),
-        ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-      );
+    } catch (e) {
+      debugPrint('Error in _scheduleNotification: $e');
+      rethrow;
     }
   }
 
