@@ -15,6 +15,7 @@ void main() async {
 
   await Hive.openBox('myAgenda');
   await Hive.openBox('appSettings');
+  await Hive.openBox('categories');
 
   runApp(const MyApp());
 }

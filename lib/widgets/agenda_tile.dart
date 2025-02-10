@@ -10,6 +10,7 @@ class AgendaTile extends StatelessWidget {
   final VoidCallback? onLongPress;
   final VoidCallback? onEdit;
   final bool showCheckbox;
+  final Function()? onDelete;
 
   const AgendaTile({
     Key? key,
@@ -18,6 +19,7 @@ class AgendaTile extends StatelessWidget {
     this.onTap,
     this.onLongPress,
     this.onEdit,
+    this.onDelete,
     this.showCheckbox = false,
   }) : super(key: key);
 
@@ -50,7 +52,7 @@ class AgendaTile extends StatelessWidget {
     final isExpired = now.isAfter(agenda.deadline);
 
     return Dismissible(
-      key: ValueKey(agenda),
+      key: ValueKey(agenda.title.hashCode),
       background: Container(
         color: Colors.red,
         alignment: Alignment.centerLeft,
@@ -80,16 +82,13 @@ class AgendaTile extends StatelessWidget {
             onHover: (value) {}),
       ),
       onDismissed: (direction) {
-        if (direction == DismissDirection.startToEnd) {}
-      },
-      dismissThresholds: const {
-        DismissDirection.startToEnd: 0.4,
-        DismissDirection.endToStart: 0.4,
+        if (direction == DismissDirection.startToEnd) {
+          onDelete?.call();
+        }
       },
       confirmDismiss: (direction) async {
         if (direction == DismissDirection.startToEnd) {
-          // Delete action
-          return await showDialog(
+          final result = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
               title: const CustomText(
@@ -102,21 +101,17 @@ class AgendaTile extends StatelessWidget {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child: const CustomText2(
-                    'Cancel',
-                  ),
+                  child: const CustomText2('Cancel'),
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(context, true),
-                  child: const CustomText2(
-                    'Delete',
-                  ),
+                  child: const CustomText2('Delete'),
                 ),
               ],
             ),
           );
+          return result ?? false;
         } else {
-          // Edit action
           onEdit?.call();
           return false;
         }

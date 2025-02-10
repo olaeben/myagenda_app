@@ -87,6 +87,27 @@ class _DialogueBoxState extends State<DialogueBox> {
     );
   }
 
+  void _showErrorMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(
+            color: Colors.white,
+            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        backgroundColor: Colors.amber,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        elevation: 8,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isLightMode = Theme.of(context).brightness == Brightness.light;
@@ -216,11 +237,26 @@ class _DialogueBoxState extends State<DialogueBox> {
                           'deadline': deadline,
                         });
                       } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: CustomText('Please fill all fields'),
-                          ),
-                        );
+                        void _showErrorMessage(
+                            BuildContext context, String message) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                message,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              backgroundColor: Colors.amber,
+                              behavior: SnackBarBehavior.floating,
+                              margin: const EdgeInsets.all(16),
+                              elevation: 8,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
                       }
                     },
                   ),
@@ -283,11 +319,7 @@ class _DialogueBoxState extends State<DialogueBox> {
         if (picked.hour < currentTime.hour ||
             (picked.hour == currentTime.hour &&
                 picked.minute < currentTime.minute)) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: CustomText('Please select a future time'),
-            ),
-          );
+          _showErrorMessage(context, 'Please select a future time');
           return;
         }
       }
