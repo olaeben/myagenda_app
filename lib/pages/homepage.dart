@@ -20,6 +20,8 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
+final _categoriesBox = Hive.box('categories');
+
 class _HomePageState extends State<HomePage> {
   final _searchController = TextEditingController();
   final NotificationService _notificationService = NotificationService();
@@ -33,15 +35,26 @@ class _HomePageState extends State<HomePage> {
   Set<String> _categories = {'Default'};
   Timer? _refreshTimer;
 
+  Set<String> _allCategories = {'Default'};
+
   @override
   void initState() {
     super.initState();
+    _loadCategories();
     _loadAgendas();
     _notificationService.initNotification();
 
     _checkExpiredAgendas();
     _refreshTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
       _checkExpiredAgendas();
+    });
+  }
+
+  void _loadCategories() {
+    final savedCategories =
+        _categoriesBox.get('categories')?.cast<String>() ?? ['Default'];
+    setState(() {
+      _categories = Set<String>.from(savedCategories);
     });
   }
 
@@ -62,12 +75,16 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _updateCategories() {
-    _categories = {'Default'};
+    _categories = _allCategories;
     for (var agenda in _agendas) {
       if (agenda.category != null && agenda.category!.isNotEmpty) {
         _categories.add(agenda.category!);
       }
     }
+  }
+
+  Future<void> _saveCategories() async {
+    await _categoriesBox.put('categories', _categories.toList());
   }
 
   void _updateFilteredAgendas() {
@@ -99,14 +116,18 @@ class _HomePageState extends State<HomePage> {
       // Status filter
       if (_selectedStatus != null) {
         final now = DateTime.now();
-        final isExpired = now.isAfter(agenda.deadline);
-        final status = isExpired
-            ? 'Expired'
-            : agenda.status
-                ? 'Completed'
-                : 'Pending';
-        if (status != _selectedStatus) {
-          return false;
+        final isExpired = !agenda.status && now.isAfter(agenda.deadline);
+
+        switch (_selectedStatus) {
+          case 'Expired':
+            if (!isExpired) return false;
+            break;
+          case 'Completed':
+            if (!agenda.status) return false;
+            break;
+          case 'Pending':
+            if (agenda.status || isExpired) return false;
+            break;
         }
       }
 
@@ -175,26 +196,53 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  void _bulkDelete() {
-    setState(() {
-      // Cancel notifications before deleting
-      for (var agenda in _filteredAgendas.where((a) => a.selected)) {
-        _notificationService.cancelNotifications(agenda.title.hashCode);
+  void _bulkDelete() async {
+    try {
+      final selectedAgendas =
+          _filteredAgendas.where((a) => a.selected).toList();
+
+      for (var agenda in selectedAgendas) {
+        await _notificationService.cancelNotifications(agenda.title.hashCode);
       }
 
-      _agendas.removeWhere(
-          (agenda) => _filteredAgendas.any((a) => a.selected && a == agenda));
-      _isMultiSelectMode = false;
-      _saveAgendas();
+      // Update lists
+      setState(() {
+        _agendas.removeWhere((agenda) => selectedAgendas.contains(agenda));
+        _filteredAgendas
+            .removeWhere((agenda) => selectedAgendas.contains(agenda));
+        _isMultiSelectMode = false;
+      });
+
+      // Save to Hive
+      final agendaData = _agendas.map((a) => a.toJson()).toList();
+      await _myAgenda.delete('myAgenda');
+      await _myAgenda.put('myAgenda', agendaData);
+
+      setState(() {
+        _updateCategories();
+        _updateFilteredAgendas();
+      });
+    } catch (e) {
+      debugPrint('Error during bulk delete: $e');
+    }
+  }
+
+  Future<void> _saveAgendasToHive() async {
+    final List<Map<String, dynamic>> agendaData =
+        _agendas.map((agenda) => agenda.toJson()).toList();
+
+    await _myAgenda.clear();
+    await _myAgenda.put('myAgenda', agendaData);
+
+    // Update UI after save
+    setState(() {
+      _updateFilteredAgendas();
+      _updateCategories();
     });
   }
 
-  void _saveAgendas() {
-    final List<Map<String, dynamic>> agendaData =
-        _agendas.map((agenda) => agenda.toJson()).toList();
-    _myAgenda.put('myAgenda', agendaData);
-    _updateFilteredAgendas();
-    _updateCategories();
+  void _saveAgendas() async {
+    await _saveAgendasToHive();
   }
 
   void _checkExpiredAgendas() {
@@ -386,6 +434,16 @@ class _HomePageState extends State<HomePage> {
                                   context,
                                   agenda: _filteredAgendas[index],
                                 ),
+                                onDelete: () {
+                                  final agenda = _filteredAgendas[index];
+                                  _notificationService.cancelNotifications(
+                                      agenda.title.hashCode);
+                                  setState(() {
+                                    _agendas.remove(agenda);
+                                    _filteredAgendas.remove(agenda);
+                                    _saveAgendasToHive();
+                                  });
+                                },
                               ),
                             );
                           },
@@ -447,13 +505,13 @@ class _HomePageState extends State<HomePage> {
         onNewCategoryAdded: (newCategory) {
           setState(() {
             _categories.add(newCategory);
+            _saveCategories();
           });
         },
         onCategoryDeleted: (deletedCategory) {
           setState(() {
             if (deletedCategory != 'Default') {
               _categories.remove(deletedCategory);
-              // Update agendas with deleted category to use 'Default'
               for (var agenda in _agendas) {
                 if (agenda.category == deletedCategory) {
                   agenda.category = 'Default';
@@ -462,6 +520,7 @@ class _HomePageState extends State<HomePage> {
               if (_selectedCategory == deletedCategory) {
                 _selectedCategory = 'Default';
               }
+              _saveCategories();
               _saveAgendas();
             }
           });

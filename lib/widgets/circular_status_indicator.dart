@@ -1,28 +1,73 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
 
-class CircularStatusIndicator extends StatelessWidget {
+class CircularStatusIndicator extends StatefulWidget {
   final Map<String, double> values;
   final double size;
   final double strokeWidth;
 
-  const CircularStatusIndicator({
-    Key? key,
-    required this.values,
-    this.size = 200,
-    this.strokeWidth = 20,
-  }) : super(key: key);
+  const CircularStatusIndicator(
+      {Key? key, required this.values, this.size = 200, this.strokeWidth = 30})
+      : super(key: key);
+
+  @override
+  State<CircularStatusIndicator> createState() =>
+      _CircularStatusIndicatorState();
+}
+
+class _CircularStatusIndicatorState extends State<CircularStatusIndicator> {
+  ChartData? selectedData;
+  int? explodeIndex;
 
   @override
   Widget build(BuildContext context) {
+    final chartData = widget.values.entries
+        .map((entry) => ChartData(
+            entry.key,
+            double.parse(entry.value.toStringAsFixed(1)),
+            _getStatusColor(entry.key)))
+        .toList();
+
     return SizedBox(
-      width: size,
-      height: size,
-      child: CustomPaint(
-        painter: CircularStatusPainter(
-          values: values,
-          strokeWidth: strokeWidth,
-        ),
+      width: widget.size,
+      height: widget.size,
+      child: SfCircularChart(
+        margin: EdgeInsets.zero,
+        annotations: [
+          CircularChartAnnotation(
+            widget: Center(
+              child: selectedData != null
+                  ? Text(
+                      '${selectedData!.value.toStringAsFixed(1)}%',
+                      style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Poppins'),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ),
+        ],
+        series: <CircularSeries>[
+          DoughnutSeries<ChartData, String>(
+            dataSource: chartData,
+            xValueMapper: (ChartData data, _) => data.status,
+            yValueMapper: (ChartData data, _) => data.value,
+            pointColorMapper: (ChartData data, _) => data.color,
+            innerRadius: '55%',
+            explode: true,
+            explodeIndex: explodeIndex,
+            explodeOffset: '10%',
+            strokeWidth: widget.strokeWidth,
+            radius: '100%',
+            onPointTap: (ChartPointDetails details) {
+              setState(() {
+                selectedData = chartData[details.pointIndex!];
+                explodeIndex = details.pointIndex;
+              });
+            },
+          )
+        ],
       ),
     );
   }
@@ -41,81 +86,11 @@ class CircularStatusIndicator extends StatelessWidget {
   }
 }
 
-class CircularStatusPainter extends CustomPainter {
-  final Map<String, double> values;
-  final double strokeWidth;
+class ChartData {
+  final String status;
+  final double value;
+  final Color color;
+  bool isSelected;
 
-  CircularStatusPainter({
-    required this.values,
-    required this.strokeWidth,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final baseRadius = (size.width - strokeWidth) / 2;
-
-    if (values.isEmpty || values.values.every((value) => value == 0)) {
-      final paint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = strokeWidth
-        ..strokeCap = StrokeCap.butt
-        ..color = Colors.grey.shade300;
-
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: baseRadius),
-        0,
-        2 * pi,
-        false,
-        paint,
-      );
-      return;
-    }
-
-    double startAngle = pi / 2;
-    final sortedEntries = values.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    const double gapAngle = 0.02;
-
-    for (var i = 0; i < sortedEntries.length; i++) {
-      final entry = sortedEntries[i];
-      final radius = baseRadius - (i * strokeWidth * 0.2);
-      final currentStrokeWidth =
-          strokeWidth * (1 + (0.5 * (sortedEntries.length - i - 1)));
-
-      final sweepAngle = (2 * pi * (entry.value / 100)) -
-          (gapAngle * (sortedEntries.length - 1));
-      final paint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = currentStrokeWidth
-        ..strokeCap = StrokeCap.butt
-        ..color = _getColor(entry.key.toLowerCase());
-
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        startAngle,
-        sweepAngle,
-        false,
-        paint,
-      );
-      startAngle += sweepAngle + gapAngle;
-    }
-  }
-
-  Color _getColor(String status) {
-    switch (status) {
-      case 'completed':
-        return Colors.green;
-      case 'pending':
-        return Colors.orange;
-      case 'expired':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => true;
+  ChartData(this.status, this.value, this.color, {this.isSelected = false});
 }

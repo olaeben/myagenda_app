@@ -1,7 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:intl/intl.dart';
 import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/data/latest.dart' as tz;
 import 'package:flutter/foundation.dart' show debugPrint;
 
 class NotificationService {
@@ -12,7 +11,6 @@ class NotificationService {
       NotificationResponse notificationResponse) async {}
 
   Future<void> initNotification() async {
-    tz.initializeTimeZones();
     // Initialize settings for Android
     const AndroidInitializationSettings androidInitializationSettings =
         AndroidInitializationSettings('@drawable/notification_icon');
