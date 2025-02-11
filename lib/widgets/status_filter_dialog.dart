@@ -28,8 +28,12 @@ class _StatusFilterDialogState extends State<StatusFilterDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isLightMode = Theme.of(context).brightness == Brightness.light;
     return AlertDialog(
-      title: const CustomText('Select Status'),
+      title: CustomText(
+        'Select Status',
+        color: isLightMode ? Colors.brown.shade800 : Colors.brown.shade100,
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,

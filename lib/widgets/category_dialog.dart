@@ -23,8 +23,12 @@ class _CategoryDialogState extends State<CategoryDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isLightMode = Theme.of(context).brightness == Brightness.light;
     return AlertDialog(
-      title: const CustomText('Select Category'),
+      title: CustomText(
+        'Select Category',
+        color: isLightMode ? Colors.brown.shade800 : Colors.brown.shade100,
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,

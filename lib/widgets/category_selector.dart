@@ -40,10 +40,14 @@ class _CategorySelectorState extends State<CategorySelector> {
   }
 
   void _showAddCategoryDialog() {
+    final isLightMode = Theme.of(context).brightness == Brightness.light;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const CustomText('Add New Category'),
+        title: CustomText(
+          'Add New Category',
+          color: isLightMode ? Colors.brown.shade800 : Colors.brown.shade100,
+        ),
         content: TextField(
           controller: _newCategoryController,
           decoration: const InputDecoration(
@@ -54,8 +58,10 @@ class _CategorySelectorState extends State<CategorySelector> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const CustomText2(
+            child: CustomText2(
               'Cancel',
+              color:
+                  isLightMode ? Colors.brown.shade800 : Colors.brown.shade100,
             ),
           ),
           TextButton(
@@ -77,8 +83,10 @@ class _CategorySelectorState extends State<CategorySelector> {
                 Navigator.pop(context);
               }
             },
-            child: const CustomText2(
+            child: CustomText2(
               'Add',
+              color:
+                  isLightMode ? Colors.brown.shade800 : Colors.brown.shade100,
             ),
           ),
         ],
@@ -88,6 +96,7 @@ class _CategorySelectorState extends State<CategorySelector> {
 
   @override
   Widget build(BuildContext context) {
+    final isLightMode = Theme.of(context).brightness == Brightness.light;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -100,17 +109,36 @@ class _CategorySelectorState extends State<CategorySelector> {
                     return await showDialog(
                       context: context,
                       builder: (context) => AlertDialog(
-                        title: CustomText('Delete Category?'),
+                        title: CustomText(
+                          'Delete Category?',
+                          color: isLightMode
+                              ? Colors.brown.shade800
+                              : Colors.brown.shade100,
+                        ),
                         content: CustomText2(
-                            'Are you sure you want to delete "$category"?'),
+                          'Are you sure you want to delete "$category"?',
+                          color: isLightMode
+                              ? Colors.brown.shade800
+                              : Colors.brown.shade100,
+                        ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context, false),
-                            child: CustomText2('Cancel'),
+                            child: CustomText2(
+                              'Cancel',
+                              color: isLightMode
+                                  ? Colors.brown.shade800
+                                  : Colors.brown.shade100,
+                            ),
                           ),
                           TextButton(
                             onPressed: () => Navigator.pop(context, true),
-                            child: CustomText2('Delete'),
+                            child: CustomText2(
+                              'Delete',
+                              color: isLightMode
+                                  ? Colors.brown.shade800
+                                  : Colors.brown.shade100,
+                            ),
                           ),
                         ],
                       ),
@@ -156,7 +184,10 @@ class _CategorySelectorState extends State<CategorySelector> {
         ),
         ListTile(
           leading: const Icon(Icons.add),
-          title: const CustomText('Add New Category'),
+          title: CustomText(
+            'Add New Category',
+            color: isLightMode ? Colors.brown.shade800 : Colors.brown.shade100,
+          ),
           onTap: _showAddCategoryDialog,
         ),
       ],

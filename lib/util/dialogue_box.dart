@@ -50,7 +50,11 @@ class _DialogueBoxState extends State<DialogueBox> {
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
-              title: const CustomText('Select Category'),
+              title: CustomText(
+                'Select Category',
+                color:
+                    isLightMode ? Colors.brown.shade800 : Colors.brown.shade100,
+              ),
               content: CategorySelector(
                 categories: widget.categories,
                 initialCategory: _selectedCategory,
@@ -155,8 +159,9 @@ class _DialogueBoxState extends State<DialogueBox> {
                               onPressed: () => _selectDate(context),
                               icon: Icon(
                                 Icons.calendar_today,
-                                color:
-                                    isLightMode ? Colors.black : Colors.white,
+                                color: isLightMode
+                                    ? Colors.brown.shade800
+                                    : Colors.brown.shade100,
                               ),
                               label: Text(
                                 selectedDate == null
@@ -165,8 +170,8 @@ class _DialogueBoxState extends State<DialogueBox> {
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                     color: isLightMode
-                                        ? Colors.black
-                                        : Colors.white,
+                                        ? Colors.brown.shade800
+                                        : Colors.brown.shade100,
                                     fontFamily: 'Poppins',
                                     fontSize: 16),
                               ),
@@ -177,8 +182,9 @@ class _DialogueBoxState extends State<DialogueBox> {
                               onPressed: () => _selectTime(context),
                               icon: Icon(
                                 Icons.access_time,
-                                color:
-                                    isLightMode ? Colors.black : Colors.white,
+                                color: isLightMode
+                                    ? Colors.brown.shade800
+                                    : Colors.brown.shade100,
                               ),
                               label: Text(
                                 selectedTime == null
@@ -186,8 +192,9 @@ class _DialogueBoxState extends State<DialogueBox> {
                                     : selectedTime!.format(context),
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color:
-                                      isLightMode ? Colors.black : Colors.white,
+                                  color: isLightMode
+                                      ? Colors.brown.shade800
+                                      : Colors.brown.shade100,
                                   fontFamily: 'Poppins',
                                   fontSize: 16,
                                 ),
@@ -208,7 +215,9 @@ class _DialogueBoxState extends State<DialogueBox> {
                 children: [
                   MyButton(
                     text: 'Save',
-                    textColor: isLightMode ? Colors.black : Colors.white,
+                    textColor: isLightMode
+                        ? Colors.brown.shade800
+                        : Colors.brown.shade700,
                     onPressed: () {
                       if (widget.controller.text.trim().isNotEmpty &&
                           selectedDate != null &&
@@ -262,7 +271,9 @@ class _DialogueBoxState extends State<DialogueBox> {
                   ),
                   MyButton(
                     text: 'Cancel',
-                    textColor: isLightMode ? Colors.black : Colors.white,
+                    textColor: isLightMode
+                        ? Colors.brown.shade800
+                        : Colors.brown.shade700,
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],

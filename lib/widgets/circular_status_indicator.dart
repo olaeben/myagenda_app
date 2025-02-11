@@ -5,9 +5,14 @@ class CircularStatusIndicator extends StatefulWidget {
   final Map<String, double> values;
   final double size;
   final double strokeWidth;
+  final Color? emptyColor;
 
   const CircularStatusIndicator(
-      {Key? key, required this.values, this.size = 200, this.strokeWidth = 30})
+      {Key? key,
+      required this.values,
+      this.emptyColor,
+      this.size = 200,
+      this.strokeWidth = 30})
       : super(key: key);
 
   @override
@@ -21,6 +26,7 @@ class _CircularStatusIndicatorState extends State<CircularStatusIndicator> {
 
   @override
   Widget build(BuildContext context) {
+    final isLightMode = Theme.of(context).brightness == Brightness.light;
     final chartData = widget.values.entries
         .map((entry) => ChartData(
             entry.key,
@@ -39,10 +45,14 @@ class _CircularStatusIndicatorState extends State<CircularStatusIndicator> {
               child: selectedData != null
                   ? Text(
                       '${selectedData!.value.toStringAsFixed(1)}%',
-                      style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Poppins'),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Poppins',
+                        color: isLightMode
+                            ? Colors.brown.shade800
+                            : Colors.brown.shade100,
+                      ),
                     )
                   : const SizedBox.shrink(),
             ),
@@ -54,7 +64,7 @@ class _CircularStatusIndicatorState extends State<CircularStatusIndicator> {
             xValueMapper: (ChartData data, _) => data.status,
             yValueMapper: (ChartData data, _) => data.value,
             pointColorMapper: (ChartData data, _) => data.color,
-            innerRadius: '55%',
+            innerRadius: '60%',
             explode: true,
             explodeIndex: explodeIndex,
             explodeOffset: '10%',
@@ -62,8 +72,13 @@ class _CircularStatusIndicatorState extends State<CircularStatusIndicator> {
             radius: '100%',
             onPointTap: (ChartPointDetails details) {
               setState(() {
-                selectedData = chartData[details.pointIndex!];
-                explodeIndex = details.pointIndex;
+                if (explodeIndex == details.pointIndex) {
+                  selectedData = null;
+                  explodeIndex = null;
+                } else {
+                  selectedData = chartData[details.pointIndex!];
+                  explodeIndex = details.pointIndex;
+                }
               });
             },
           )

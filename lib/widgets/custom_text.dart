@@ -16,6 +16,22 @@ class CustomText extends StatelessWidget {
     this.textAlign,
   });
 
+  CustomText copyWith({
+    String? text,
+    double? fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+    TextAlign? textAlign,
+  }) {
+    return CustomText(
+      text ?? this.text,
+      fontSize: fontSize ?? this.fontSize,
+      fontWeight: fontWeight ?? this.fontWeight,
+      color: color ?? this.color,
+      textAlign: textAlign ?? this.textAlign,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Text(
