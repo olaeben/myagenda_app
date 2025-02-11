@@ -15,8 +15,36 @@ class StatsCard extends StatelessWidget {
     required this.expiredPercentage,
   }) : super(key: key);
 
+  Widget _buildStatRow(String label, String value, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '$label: $value',
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isLightMode = Theme.of(context).brightness == Brightness.light;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -29,18 +57,20 @@ class StatsCard extends StatelessWidget {
               child: Stack(
                 children: [
                   CircularStatusIndicator(
-                    values: {
-                      'Completed': completedPercentage,
-                      'Pending': pendingPercentage,
-                      'Expired': expiredPercentage,
-                    },
+                    values: totalAgendas == 0
+                        ? {'Empty': 100}
+                        : {
+                            'Completed': completedPercentage,
+                            'Pending': pendingPercentage,
+                            'Expired': expiredPercentage,
+                          },
                     size: 120,
                     strokeWidth: 15,
+                    emptyColor: Colors.grey.shade300,
                   ),
                 ],
               ),
             ),
-            // Stats Breakdown
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -49,9 +79,12 @@ class StatsCard extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontWeight: FontWeight.bold,
+                    color: isLightMode
+                        ? Colors.brown.shade800
+                        : Colors.brown.shade100,
                   ),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 _buildStatRow(
                   'Completed',
                   '${(completedPercentage * totalAgendas / 100).round()}/$totalAgendas',
@@ -71,29 +104,6 @@ class StatsCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildStatRow(String label, String value, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        children: [
-          Container(
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
-          ),
-          SizedBox(width: 8),
-          Text(
-            '$label: $value',
-            style: TextStyle(fontFamily: 'Poppins'),
-          ),
-        ],
       ),
     );
   }

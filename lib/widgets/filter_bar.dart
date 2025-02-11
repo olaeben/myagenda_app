@@ -28,6 +28,7 @@ class FilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLightMode = Theme.of(context).brightness == Brightness.light;
     return Column(
       children: [
         Row(
@@ -48,7 +49,12 @@ class FilterBar extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            const Icon(Icons.filter_list, size: 20),
+            Icon(
+              Icons.filter_list,
+              size: 20,
+              color:
+                  isLightMode ? Colors.brown.shade800 : Colors.brown.shade100,
+            ),
             const SizedBox(width: 60),
             _buildFilterButton(
               context,

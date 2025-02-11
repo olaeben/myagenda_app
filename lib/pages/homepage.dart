@@ -300,7 +300,13 @@ class _HomePageState extends State<HomePage> {
             : null,
         title: _isMultiSelectMode
             ? CustomText('$selectedCount selected')
-            : CustomText('M Y  A G E N D A', fontSize: 20),
+            : CustomText(
+                'M Y  A G E N D A',
+                fontSize: 20,
+                color: Theme.of(context).brightness == Brightness.light
+                    ? Colors.brown.shade800
+                    : Colors.brown.shade100,
+              ),
         actions: [
           if (_isMultiSelectMode)
             TextButton(
