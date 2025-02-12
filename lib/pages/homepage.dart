@@ -34,7 +34,7 @@ class _HomePageState extends State<HomePage> {
   String? _selectedStatus;
   Set<String> _categories = {'Default'};
   Timer? _refreshTimer;
-
+  bool _isSpeedDialOpen = false;
   Set<String> _allCategories = {'Default'};
 
   @override
@@ -89,23 +89,18 @@ class _HomePageState extends State<HomePage> {
 
   void _updateFilteredAgendas() {
     _filteredAgendas = _agendas.where((agenda) {
-      // Search filter
       if (_searchController.text.isNotEmpty) {
         final searchTerm = _searchController.text.toLowerCase();
-        if (!agenda.title.toLowerCase().contains(searchTerm) &&
-            !(agenda.category?.toLowerCase().contains(searchTerm) ?? false)) {
-          return false;
-        }
+        return agenda.title.toLowerCase().contains(searchTerm) ||
+            (agenda.category?.toLowerCase().contains(searchTerm) ?? false);
       }
 
-      // Category filter
       if (_selectedCategory != null && _selectedCategory != 'Default') {
         if (agenda.category != _selectedCategory) {
           return false;
         }
       }
 
-      // Date range filter
       if (_selectedDateRange != null) {
         if (agenda.deadline.isBefore(_selectedDateRange!.start) ||
             agenda.deadline.isAfter(_selectedDateRange!.end)) {
@@ -113,7 +108,6 @@ class _HomePageState extends State<HomePage> {
         }
       }
 
-      // Status filter
       if (_selectedStatus != null) {
         final now = DateTime.now();
         final isExpired = !agenda.status && now.isAfter(agenda.deadline);
@@ -169,6 +163,69 @@ class _HomePageState extends State<HomePage> {
     };
   }
 
+  void _showAddCategoryDialog(BuildContext context) {
+    final controller = TextEditingController();
+    String? _errorMessage;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text('Add Category'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: controller,
+                    decoration: InputDecoration(
+                      hintText: 'Enter category name',
+                      errorText: _errorMessage,
+                      errorStyle:
+                          const TextStyle(color: Colors.red, fontSize: 12),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _errorMessage = null;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    if (controller.text.trim().isEmpty) {
+                      setState(() {
+                        _errorMessage = "Ooops... name cannot be empty";
+                      });
+                    } else {
+                      setState(() {
+                        _categories.add(controller.text.trim());
+                        _saveCategories();
+                      });
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: Text('Add'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    ).then((_) {
+      setState(() {
+        _isSpeedDialOpen = false;
+      });
+    });
+  }
+
   void _toggleMultiSelect(AgendaModel agenda) {
     setState(() {
       if (!_isMultiSelectMode) {
@@ -205,7 +262,6 @@ class _HomePageState extends State<HomePage> {
         await _notificationService.cancelNotifications(agenda.title.hashCode);
       }
 
-      // Update lists
       setState(() {
         _agendas.removeWhere((agenda) => selectedAgendas.contains(agenda));
         _filteredAgendas
@@ -213,7 +269,6 @@ class _HomePageState extends State<HomePage> {
         _isMultiSelectMode = false;
       });
 
-      // Save to Hive
       final agendaData = _agendas.map((a) => a.toJson()).toList();
       await _myAgenda.delete('myAgenda');
       await _myAgenda.put('myAgenda', agendaData);
@@ -267,230 +322,284 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final stats = _calculateStats();
     final selectedCount = _filteredAgendas.where((a) => a.selected).length;
+    final hasAgendas = _agendas.isNotEmpty;
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: AppBar(
-        centerTitle: true,
+    return GestureDetector(
+      onTap: () {
+        if (_isSpeedDialOpen) {
+          setState(() {
+            _isSpeedDialOpen = false;
+          });
+        }
+      },
+      child: Scaffold(
         backgroundColor: Theme.of(context).colorScheme.surface,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        leading: _isMultiSelectMode
-            ? IconButton(
-                icon: Icon(
-                  _filteredAgendas.every((a) => a.selected)
-                      ? Icons.check_circle
-                      : Icons.check_circle_outline,
+        appBar: AppBar(
+          centerTitle: true,
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          leading: _isMultiSelectMode
+              ? IconButton(
+                  icon: Icon(
+                    _filteredAgendas.every((a) => a.selected)
+                        ? Icons.check_circle
+                        : Icons.check_circle_outline,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      bool allSelected =
+                          _filteredAgendas.every((a) => a.selected);
+                      for (var agenda in _filteredAgendas) {
+                        agenda.selected = !allSelected;
+                      }
+                      if (!allSelected && _filteredAgendas.isNotEmpty) {
+                        _isMultiSelectMode = true;
+                      } else if (allSelected) {
+                        _isMultiSelectMode = false;
+                      }
+                    });
+                  },
+                )
+              : null,
+          title: _isMultiSelectMode
+              ? CustomText('$selectedCount selected')
+              : CustomText(
+                  'M Y  A G E N D A',
+                  fontSize: 20,
+                  color: Theme.of(context).brightness == Brightness.light
+                      ? Colors.brown.shade800
+                      : Colors.brown.shade100,
                 ),
-                onPressed: () {
-                  setState(() {
-                    bool allSelected =
-                        _filteredAgendas.every((a) => a.selected);
-                    for (var agenda in _filteredAgendas) {
-                      agenda.selected = !allSelected;
-                    }
-                    if (!allSelected && _filteredAgendas.isNotEmpty) {
-                      _isMultiSelectMode = true;
-                    } else if (allSelected) {
+          actions: [
+            if (_isMultiSelectMode)
+              TextButton(
+                  onPressed: () {
+                    setState(() {
+                      for (var agenda in _filteredAgendas) {
+                        agenda.selected = false;
+                      }
                       _isMultiSelectMode = false;
-                    }
-                  });
-                },
-              )
-            : null,
-        title: _isMultiSelectMode
-            ? CustomText('$selectedCount selected')
-            : CustomText(
-                'M Y  A G E N D A',
-                fontSize: 20,
-                color: Theme.of(context).brightness == Brightness.light
-                    ? Colors.brown.shade800
-                    : Colors.brown.shade100,
+                    });
+                  },
+                  child: CustomText('Cancel'))
+            else
+              IconButton(
+                icon: Icon(Theme.of(context).brightness == Brightness.light
+                    ? Icons.dark_mode
+                    : Icons.light_mode),
+                onPressed: widget.onToggleTheme,
               ),
-        actions: [
-          if (_isMultiSelectMode)
-            TextButton(
-                onPressed: () {
-                  setState(() {
-                    for (var agenda in _filteredAgendas) {
-                      agenda.selected = false;
-                    }
-                    _isMultiSelectMode = false;
-                  });
-                },
-                child: CustomText('Cancel'))
-          else
-            IconButton(
-              icon: Icon(Theme.of(context).brightness == Brightness.light
-                  ? Icons.dark_mode
-                  : Icons.light_mode),
-              onPressed: widget.onToggleTheme,
-            ),
-        ],
-      ),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            children: [
-                              AgendaSearchBar(
-                                controller: _searchController,
-                                onChanged: (value) => _updateFilteredAgendas(),
-                                onClear: () {
-                                  _searchController.clear();
-                                  _updateFilteredAgendas();
-                                },
+          ],
+        ),
+        body: SafeArea(
+          child: Stack(
+            children: [
+              IgnorePointer(
+                ignoring: _isSpeedDialOpen,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                children: [
+                                  AgendaSearchBar(
+                                    controller: _searchController,
+                                    onChanged: (value) =>
+                                        _updateFilteredAgendas(),
+                                    onClear: () {
+                                      _searchController.clear();
+                                      _updateFilteredAgendas();
+                                    },
+                                  ),
+                                  SizedBox(height: 16),
+                                  StatsCard(
+                                    totalAgendas: _agendas.length,
+                                    completedPercentage: stats['completed']!,
+                                    pendingPercentage: stats['pending']!,
+                                    expiredPercentage: stats['expired']!,
+                                  ),
+                                  SizedBox(height: 16),
+                                  if (hasAgendas)
+                                    FilterBar(
+                                      categories: _categories.toList(),
+                                      selectedCategory: _selectedCategory,
+                                      selectedDateRange: _selectedDateRange,
+                                      selectedStatus: _selectedStatus,
+                                      onCategorySelected: (category) {
+                                        setState(() {
+                                          _selectedCategory = category;
+                                          _updateFilteredAgendas();
+                                        });
+                                      },
+                                      onDateRangeSelected: (dateRange) {
+                                        setState(() {
+                                          _selectedDateRange = dateRange;
+                                          _updateFilteredAgendas();
+                                        });
+                                      },
+                                      onStatusSelected: (status) {
+                                        setState(() {
+                                          _selectedStatus = status;
+                                          _updateFilteredAgendas();
+                                        });
+                                      },
+                                      onClearFilters: () {
+                                        setState(() {
+                                          _selectedCategory = null;
+                                          _selectedDateRange = null;
+                                          _selectedStatus = null;
+                                          _updateFilteredAgendas();
+                                        });
+                                      },
+                                      onCategoryDeleted: (deletedCategory) {
+                                        setState(() {
+                                          if (deletedCategory != 'Default') {
+                                            _categories.remove(deletedCategory);
+                                            for (var agenda in _agendas) {
+                                              if (agenda.category ==
+                                                  deletedCategory) {
+                                                agenda.category = 'Default';
+                                              }
+                                            }
+                                            if (_selectedCategory ==
+                                                deletedCategory) {
+                                              _selectedCategory = 'Default';
+                                            }
+                                            _saveAgendas();
+                                          }
+                                        });
+                                      },
+                                    ),
+                                ],
                               ),
-                              SizedBox(height: 16),
-                              StatsCard(
-                                totalAgendas: _agendas.length,
-                                completedPercentage: stats['completed']!,
-                                pendingPercentage: stats['pending']!,
-                                expiredPercentage: stats['expired']!,
-                              ),
-                              SizedBox(height: 16),
-                              FilterBar(
-                                categories: _categories.toList(),
-                                selectedCategory: _selectedCategory,
-                                selectedDateRange: _selectedDateRange,
-                                selectedStatus: _selectedStatus,
-                                onCategorySelected: (category) {
-                                  setState(() {
-                                    _selectedCategory = category;
-                                    _updateFilteredAgendas();
-                                  });
-                                },
-                                onDateRangeSelected: (dateRange) {
-                                  setState(() {
-                                    _selectedDateRange = dateRange;
-                                    _updateFilteredAgendas();
-                                  });
-                                },
-                                onStatusSelected: (status) {
-                                  setState(() {
-                                    _selectedStatus = status;
-                                    _updateFilteredAgendas();
-                                  });
-                                },
-                                onClearFilters: () {
-                                  setState(() {
-                                    _selectedCategory = null;
-                                    _selectedDateRange = null;
-                                    _selectedStatus = null;
-                                    _updateFilteredAgendas();
-                                  });
-                                },
-                                onCategoryDeleted: (deletedCategory) {
-                                  setState(() {
-                                    if (deletedCategory != 'Default') {
-                                      _categories.remove(deletedCategory);
-                                      for (var agenda in _agendas) {
-                                        if (agenda.category ==
-                                            deletedCategory) {
-                                          agenda.category = 'Default';
-                                        }
-                                      }
-                                      if (_selectedCategory ==
-                                          deletedCategory) {
-                                        _selectedCategory = 'Default';
-                                      }
-                                      _saveAgendas();
-                                    }
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
+                            ),
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: NeverScrollableScrollPhysics(),
+                              itemCount: _filteredAgendas.length,
+                              itemBuilder: (context, index) {
+                                return Padding(
+                                  padding: EdgeInsets.only(
+                                      bottom:
+                                          index == _filteredAgendas.length - 1
+                                              ? 80
+                                              : 0),
+                                  child: AgendaTile(
+                                    agenda: _filteredAgendas[index],
+                                    onStatusChanged: (value) {
+                                      setState(() {
+                                        _filteredAgendas[index].status =
+                                            value ?? false;
+                                        _saveAgendas();
+                                      });
+                                    },
+                                    onLongPress: () => _toggleMultiSelect(
+                                        _filteredAgendas[index]),
+                                    onTap: _isMultiSelectMode
+                                        ? () => _toggleMultiSelect(
+                                            _filteredAgendas[index])
+                                        : null,
+                                    showCheckbox: _isMultiSelectMode,
+                                    onEdit: () => _showAddAgendaDialog(
+                                      context,
+                                      agenda: _filteredAgendas[index],
+                                    ),
+                                    onDelete: () {
+                                      final agenda = _filteredAgendas[index];
+                                      _notificationService.cancelNotifications(
+                                          agenda.title.hashCode);
+                                      setState(() {
+                                        _agendas.remove(agenda);
+                                        _filteredAgendas.remove(agenda);
+                                        _saveAgendasToHive();
+                                      });
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
                         ),
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: NeverScrollableScrollPhysics(),
-                          itemCount: _filteredAgendas.length,
-                          itemBuilder: (context, index) {
-                            return Padding(
-                              padding: EdgeInsets.only(
-                                  bottom: index == _filteredAgendas.length - 1
-                                      ? 80
-                                      : 0),
-                              child: AgendaTile(
-                                agenda: _filteredAgendas[index],
-                                onStatusChanged: (value) {
-                                  setState(() {
-                                    _filteredAgendas[index].status =
-                                        value ?? false;
-                                    _saveAgendas();
-                                  });
-                                },
-                                onLongPress: () =>
-                                    _toggleMultiSelect(_filteredAgendas[index]),
-                                onTap: _isMultiSelectMode
-                                    ? () => _toggleMultiSelect(
-                                        _filteredAgendas[index])
-                                    : null,
-                                showCheckbox: _isMultiSelectMode,
-                                onEdit: () => _showAddAgendaDialog(
-                                  context,
-                                  agenda: _filteredAgendas[index],
-                                ),
-                                onDelete: () {
-                                  final agenda = _filteredAgendas[index];
-                                  _notificationService.cancelNotifications(
-                                      agenda.title.hashCode);
-                                  setState(() {
-                                    _agendas.remove(agenda);
-                                    _filteredAgendas.remove(agenda);
-                                    _saveAgendasToHive();
-                                  });
-                                },
-                              ),
-                            );
-                          },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_isSpeedDialOpen)
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isSpeedDialOpen = false;
+                      });
+                    },
+                    child: Container(
+                      color: Colors.transparent,
+                    ),
+                  ),
+                ),
+              if (_isMultiSelectMode)
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    color: Theme.of(context).colorScheme.surface,
+                    padding: EdgeInsets.all(16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.check),
+                          onPressed: _bulkComplete,
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.delete),
+                          onPressed: _bulkDelete,
                         ),
                       ],
                     ),
                   ),
                 ),
-              ],
-            ),
-            if (_isMultiSelectMode)
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  color: Theme.of(context).colorScheme.surface,
-                  padding: EdgeInsets.all(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.check),
-                        onPressed: _bulkComplete,
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: _bulkDelete,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
+            ],
+          ),
         ),
-      ),
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: _isMultiSelectMode ? 72 : 0),
-        child: FloatingActionButton(
-          onPressed: () => _showAddAgendaDialog(context),
-          child: Icon(Icons.add),
+        floatingActionButton: Padding(
+          padding: EdgeInsets.only(bottom: _isMultiSelectMode ? 72 : 0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_isSpeedDialOpen) ...[
+                FloatingActionButton.extended(
+                  heroTag: 'addCategory',
+                  onPressed: () => _showAddCategoryDialog(context),
+                  label: Text('Add Category'),
+                  icon: Icon(Icons.category),
+                ),
+                SizedBox(height: 8),
+                FloatingActionButton.extended(
+                  heroTag: 'addAgenda',
+                  onPressed: () => _showAddAgendaDialog(context),
+                  label: Text('Add Agenda'),
+                  icon: Icon(Icons.event),
+                ),
+                SizedBox(height: 8),
+              ],
+              FloatingActionButton(
+                onPressed: () {
+                  setState(() {
+                    _isSpeedDialOpen = !_isSpeedDialOpen;
+                  });
+                },
+                child: Icon(_isSpeedDialOpen ? Icons.close : Icons.add),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -508,12 +617,6 @@ class _HomePageState extends State<HomePage> {
         initialCategory: initialCategory,
         initialDeadline: agenda?.deadline,
         categories: _categories.toList(),
-        onNewCategoryAdded: (newCategory) {
-          setState(() {
-            _categories.add(newCategory);
-            _saveCategories();
-          });
-        },
         onCategoryDeleted: (deletedCategory) {
           setState(() {
             if (deletedCategory != 'Default') {
@@ -536,27 +639,20 @@ class _HomePageState extends State<HomePage> {
       if (value != null) {
         setState(() {
           if (agenda != null) {
-            // Cancel existing notifications for this agenda
             _notificationService.cancelNotifications(agenda.title.hashCode);
 
-            // Edit existing agenda
             agenda.title = value['text'];
             agenda.category = value['category'];
             agenda.deadline = value['deadline'];
-
-            // Reset status if agenda was completed and new deadline is in future
             if (agenda.status && agenda.deadline.isAfter(DateTime.now())) {
               agenda.status = false;
             }
-
-            // Schedule new notifications
             _notificationService.scheduleDeadlineNotifications(
               id: agenda.title.hashCode,
               title: agenda.title,
               deadline: agenda.deadline,
             );
           } else {
-            // Add new agenda
             final newAgenda = AgendaModel(
               title: value['text'],
               category: value['category'],
@@ -564,8 +660,6 @@ class _HomePageState extends State<HomePage> {
               deadline: value['deadline'],
             );
             _agendas.insert(0, newAgenda);
-
-            // Schedule notifications for new agenda
             _notificationService.scheduleDeadlineNotifications(
               id: newAgenda.title.hashCode,
               title: newAgenda.title,
@@ -573,6 +667,7 @@ class _HomePageState extends State<HomePage> {
             );
           }
           _saveAgendas();
+          _isSpeedDialOpen = false;
         });
       }
     });
