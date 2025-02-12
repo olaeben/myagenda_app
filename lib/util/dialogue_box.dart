@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:myagenda_app/util/mybutton.dart';
-
-import '../widgets/category_selector.dart';
 import '../widgets/custom_text.dart';
 
 class DialogueBox extends StatefulWidget {
@@ -9,7 +7,6 @@ class DialogueBox extends StatefulWidget {
   final DateTime? initialDeadline;
   final String? initialCategory;
   final List<String> categories;
-  final Function(String) onNewCategoryAdded;
   final Function(String) onCategoryDeleted;
 
   const DialogueBox({
@@ -18,7 +15,6 @@ class DialogueBox extends StatefulWidget {
     this.initialDeadline,
     this.initialCategory,
     required this.categories,
-    required this.onNewCategoryAdded,
     required this.onCategoryDeleted,
   }) : super(key: key);
 
@@ -30,87 +26,7 @@ class _DialogueBoxState extends State<DialogueBox> {
   DateTime? selectedDate;
   TimeOfDay? selectedTime;
   String? _selectedCategory;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedCategory = widget.initialCategory;
-    if (widget.initialDeadline != null) {
-      selectedDate = widget.initialDeadline;
-      selectedTime = TimeOfDay.fromDateTime(widget.initialDeadline!);
-    }
-  }
-
-  Widget _buildCategoryField() {
-    final isLightMode = Theme.of(context).brightness == Brightness.light;
-    return Container(
-      width: double.infinity,
-      child: TextButton(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: CustomText(
-                'Select Category',
-                color:
-                    isLightMode ? Colors.brown.shade800 : Colors.brown.shade100,
-              ),
-              content: CategorySelector(
-                categories: widget.categories,
-                initialCategory: _selectedCategory,
-                onCategorySelected: (category) {
-                  setState(() {
-                    _selectedCategory = category;
-                  });
-                  Navigator.pop(context);
-                },
-                onNewCategoryAdded: (newCategory) {
-                  setState(() {
-                    _selectedCategory = newCategory;
-                  });
-                },
-                onCategoryDeleted: widget.onCategoryDeleted,
-              ),
-            ),
-          );
-        },
-        style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          side: BorderSide(color: Colors.grey),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ),
-        child: Text(
-          _selectedCategory ?? 'Select Category',
-          style: TextStyle(
-            color: isLightMode ? Colors.black : Colors.white,
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showErrorMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(
-            color: Colors.white,
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        backgroundColor: Colors.amber,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        elevation: 8,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
+  String? _errorMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -125,89 +41,96 @@ class _DialogueBoxState extends State<DialogueBox> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Flexible(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextField(
-                        controller: widget.controller,
-                        style: TextStyle(
-                          color: isLightMode ? Colors.black : Colors.white,
+            SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: widget.controller,
+                      style: TextStyle(
+                        color: isLightMode ? Colors.black : Colors.white,
+                        fontFamily: 'Poppins',
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Enter Agenda',
+                        hintStyle: TextStyle(
+                          color: Colors.grey,
                           fontFamily: 'Poppins',
                         ),
-                        decoration: InputDecoration(
-                          hintText: 'Enter Agenda',
-                          hintStyle: TextStyle(
-                            color: Colors.grey,
-                            fontFamily: 'Poppins',
-                          ),
-                          border: OutlineInputBorder(),
-                        ),
-                        maxLines: 3,
-                        cursorColor: isLightMode ? Colors.black : Colors.white,
+                        border: OutlineInputBorder(),
                       ),
-                      const SizedBox(height: 16),
-                      _buildCategoryField(),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextButton.icon(
-                              onPressed: () => _selectDate(context),
-                              icon: Icon(
-                                Icons.calendar_today,
-                                color: isLightMode
-                                    ? Colors.brown.shade800
-                                    : Colors.brown.shade100,
-                              ),
-                              label: Text(
-                                selectedDate == null
-                                    ? 'Select Date'
-                                    : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                    color: isLightMode
-                                        ? Colors.brown.shade800
-                                        : Colors.brown.shade100,
-                                    fontFamily: 'Poppins',
-                                    fontSize: 16),
-                              ),
+                      maxLines: 3,
+                      cursorColor: isLightMode ? Colors.black : Colors.white,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildCategoryField(),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton.icon(
+                            onPressed: () => _selectDate(context),
+                            icon: Icon(
+                              Icons.calendar_today,
+                              color: isLightMode
+                                  ? Colors.brown.shade800
+                                  : Colors.brown.shade100,
                             ),
-                          ),
-                          Expanded(
-                            child: TextButton.icon(
-                              onPressed: () => _selectTime(context),
-                              icon: Icon(
-                                Icons.access_time,
-                                color: isLightMode
-                                    ? Colors.brown.shade800
-                                    : Colors.brown.shade100,
-                              ),
-                              label: Text(
-                                selectedTime == null
-                                    ? 'Select Time'
-                                    : selectedTime!.format(context),
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
+                            label: Text(
+                              selectedDate == null
+                                  ? 'Select Date'
+                                  : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
                                   color: isLightMode
                                       ? Colors.brown.shade800
                                       : Colors.brown.shade100,
                                   fontFamily: 'Poppins',
-                                  fontSize: 16,
-                                ),
+                                  fontSize: 16),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: TextButton.icon(
+                            onPressed: () => _selectTime(context),
+                            icon: Icon(
+                              Icons.access_time,
+                              color: isLightMode
+                                  ? Colors.brown.shade800
+                                  : Colors.brown.shade100,
+                            ),
+                            label: Text(
+                              selectedTime == null
+                                  ? 'Select Time'
+                                  : selectedTime!.format(context),
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: isLightMode
+                                    ? Colors.brown.shade800
+                                    : Colors.brown.shade100,
+                                fontFamily: 'Poppins',
+                                fontSize: 16,
                               ),
                             ),
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
+            if (_errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: CustomText(
+                  _errorMessage!,
+                  color: Colors.red,
+                  fontSize: 12,
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
@@ -219,9 +142,16 @@ class _DialogueBoxState extends State<DialogueBox> {
                         ? Colors.brown.shade800
                         : Colors.brown.shade700,
                     onPressed: () {
-                      if (widget.controller.text.trim().isNotEmpty &&
-                          selectedDate != null &&
-                          selectedTime != null) {
+                      setState(() {
+                        if (widget.controller.text.trim().isEmpty) {
+                          _errorMessage = "Ooops... agenda cannot be empty";
+                          return;
+                        }
+                        if (selectedDate == null || selectedTime == null) {
+                          _errorMessage = "Please select both date and time";
+                          return;
+                        }
+
                         final deadline = DateTime(
                           selectedDate!.year,
                           selectedDate!.month,
@@ -231,42 +161,18 @@ class _DialogueBoxState extends State<DialogueBox> {
                         );
 
                         if (deadline.isBefore(DateTime.now())) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: CustomText(
-                                  'Please select a future date and time'),
-                            ),
-                          );
+                          _errorMessage =
+                              "Please select a future date and time";
                           return;
                         }
 
+                        _errorMessage = null;
                         Navigator.of(context).pop({
                           'text': widget.controller.text,
                           'category': _selectedCategory ?? 'Default',
                           'deadline': deadline,
                         });
-                      } else {
-                        void _showErrorMessage(
-                            BuildContext context, String message) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                message,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontFamily: 'Poppins',
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              backgroundColor: Colors.amber,
-                              behavior: SnackBarBehavior.floating,
-                              margin: const EdgeInsets.all(16),
-                              elevation: 8,
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                        }
-                      }
+                      });
                     },
                   ),
                   MyButton(
@@ -285,7 +191,38 @@ class _DialogueBoxState extends State<DialogueBox> {
     );
   }
 
+  bool _validateDateTime() {
+    final now = DateTime.now();
+    if (selectedDate == null || selectedTime == null) {
+      setState(() {
+        _errorMessage = 'Please select both date and time';
+      });
+      return false;
+    }
+
+    final selectedDateTime = DateTime(
+      selectedDate!.year,
+      selectedDate!.month,
+      selectedDate!.day,
+      selectedTime!.hour,
+      selectedTime!.minute,
+    );
+
+    if (selectedDateTime.isBefore(now)) {
+      setState(() {
+        _errorMessage = 'Please select a future date and time';
+      });
+      return false;
+    }
+
+    setState(() {
+      _errorMessage = null;
+    });
+    return true;
+  }
+
   Future<void> _selectDate(BuildContext context) async {
+    setState(() => _errorMessage = null);
     final now = DateTime.now();
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -314,6 +251,7 @@ class _DialogueBoxState extends State<DialogueBox> {
   }
 
   Future<void> _selectTime(BuildContext context) async {
+    setState(() => _errorMessage = null);
     final now = DateTime.now();
     final currentTime = TimeOfDay.now();
 
@@ -339,5 +277,46 @@ class _DialogueBoxState extends State<DialogueBox> {
         selectedTime = picked;
       });
     }
+  }
+
+  Widget _buildCategoryField() {
+    final isLightMode = Theme.of(context).brightness == Brightness.light;
+    return DropdownButtonFormField<String>(
+      value: _selectedCategory ?? widget.initialCategory ?? 'Default',
+      items: widget.categories.map((category) {
+        return DropdownMenuItem(
+          value: category,
+          child: Text(
+            category,
+            style: TextStyle(
+              color: isLightMode ? Colors.black : Colors.white,
+              fontFamily: 'Poppins',
+            ),
+          ),
+        );
+      }).toList(),
+      onChanged: (value) {
+        setState(() {
+          _selectedCategory = value;
+        });
+      },
+      decoration: InputDecoration(
+        labelText: 'Category',
+        labelStyle: TextStyle(
+          color: isLightMode ? Colors.brown.shade800 : Colors.brown.shade100,
+        ),
+        border: OutlineInputBorder(),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Colors.grey),
+        ),
+      ),
+      dropdownColor: Theme.of(context).colorScheme.surface,
+    );
+  }
+
+  void _showErrorMessage(BuildContext context, String message) {
+    setState(() {
+      _errorMessage = message;
+    });
   }
 }
