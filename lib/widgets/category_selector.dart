@@ -39,61 +39,6 @@ class _CategorySelectorState extends State<CategorySelector> {
     super.dispose();
   }
 
-  void _showAddCategoryDialog() {
-    final isLightMode = Theme.of(context).brightness == Brightness.light;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: CustomText(
-          'Add New Category',
-          color: isLightMode ? Colors.brown.shade800 : Colors.brown.shade100,
-        ),
-        content: TextField(
-          controller: _newCategoryController,
-          decoration: const InputDecoration(
-            labelText: 'Category Name',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: CustomText2(
-              'Cancel',
-              color:
-                  isLightMode ? Colors.brown.shade800 : Colors.brown.shade100,
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              if (_newCategoryController.text.isNotEmpty) {
-                final newCategory = _newCategoryController.text;
-                void _addNewCategory(String newCategory) {
-                  if (widget.onNewCategoryAdded != null) {
-                    widget.onNewCategoryAdded(newCategory);
-                  }
-                  widget.onCategorySelected(newCategory);
-                }
-
-                setState(() {
-                  _selectedCategory = newCategory;
-                });
-                widget.onCategorySelected(newCategory);
-                _newCategoryController.clear();
-                Navigator.pop(context);
-              }
-            },
-            child: CustomText2(
-              'Add',
-              color:
-                  isLightMode ? Colors.brown.shade800 : Colors.brown.shade100,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final isLightMode = Theme.of(context).brightness == Brightness.light;
@@ -191,6 +136,94 @@ class _CategorySelectorState extends State<CategorySelector> {
           onTap: _showAddCategoryDialog,
         ),
       ],
+    );
+  }
+
+  void _showAddCategoryDialog() {
+    final isLightMode = Theme.of(context).brightness == Brightness.light;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildAddCategoryContent(isLightMode),
+    );
+  }
+
+  Widget _buildAddCategoryContent(bool isLightMode) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isLightMode ? Colors.white : Colors.grey[850],
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'New Category',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Poppins',
+                    color: isLightMode ? Colors.black : Colors.white,
+                  ),
+                ),
+              ),
+              SizedBox(height: 16),
+              TextField(
+                controller: _newCategoryController,
+                decoration: InputDecoration(
+                  hintText: 'Enter category name',
+                  filled: true,
+                  fillColor: isLightMode ? Colors.grey[100] : Colors.grey[800],
+                  border: UnderlineInputBorder(),
+                ),
+                autofocus: true,
+              ),
+              SizedBox(height: 20),
+              Center(
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (_newCategoryController.text.isNotEmpty) {
+                      final newCategory = _newCategoryController.text;
+                      setState(() {
+                        _selectedCategory = newCategory;
+                      });
+                      widget.onNewCategoryAdded(newCategory);
+                      widget.onCategorySelected(newCategory);
+                      _newCategoryController.clear();
+                      Navigator.pop(context);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.brown[700],
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 100, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                  ),
+                  child: const Text('Create',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      )),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

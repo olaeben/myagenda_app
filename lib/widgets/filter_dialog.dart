@@ -94,6 +94,7 @@ class _FilterDialogState extends State<FilterDialog> {
                         _currentSelection = value;
                       });
                       widget.onOptionSelected(value);
+                      Navigator.pop(context);
                     },
                   ),
                 )),

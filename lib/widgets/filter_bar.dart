@@ -34,9 +34,7 @@ class FilterBar extends StatelessWidget {
         Row(
           children: [
             const Spacer(),
-            if (selectedCategory != null ||
-                selectedDateRange != null ||
-                selectedStatus != null)
+            if (selectedCategory != null || selectedDateRange != null)
               TextButton(
                 onPressed: onClearFilters,
                 child: const Text(
@@ -47,31 +45,27 @@ class FilterBar extends StatelessWidget {
           ],
         ),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.filter_list,
               size: 20,
-              color:
-                  isLightMode ? Colors.brown.shade800 : Colors.brown.shade100,
+              color: isLightMode ? Colors.brown.shade800 : Colors.brown.shade100,
             ),
-            const SizedBox(width: 60),
+            const SizedBox(width: 24),
             _buildFilterButton(
               context,
               'Category',
               () => _showCategoryFilter(context),
             ),
-            const SizedBox(width: 8),
-            _buildFilterButton(
-              context,
-              'Date',
-              () => _showDateFilter(context),
-            ),
-            const SizedBox(width: 8),
-            _buildFilterButton(
-              context,
-              'Status',
-              () => _showStatusFilter(context),
+            const SizedBox(width: 16),
+            GestureDetector(
+              onTap: () => _showDateFilter(context),
+              child: Icon(
+                Icons.calendar_today,
+                size: 24,
+                color: isLightMode ? Colors.brown.shade800 : Colors.brown.shade100,
+              ),
             ),
           ],
         ),
@@ -144,9 +138,15 @@ class FilterBar extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => StatusFilterDialog(
-        options: ['Completed', 'Pending', 'Expired'],
-        selectedOption: selectedStatus,
-        onOptionSelected: onStatusSelected,
+        options: const ['completed', 'pending', 'expired'],
+        selectedOption: selectedStatus?.toLowerCase(),
+        onOptionSelected: (status) {
+          if (status != null) {
+            onStatusSelected(status.toLowerCase());
+          } else {
+            onStatusSelected(null);
+          }
+        },
       ),
     );
   }

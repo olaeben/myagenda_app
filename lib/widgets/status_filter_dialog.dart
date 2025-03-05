@@ -13,6 +13,10 @@ class StatusFilterDialog extends StatefulWidget {
     required this.onOptionSelected,
   }) : super(key: key);
 
+  String _getDisplayText(String status) {
+    return status[0].toUpperCase() + status.substring(1);
+  }
+
   @override
   State<StatusFilterDialog> createState() => _StatusFilterDialogState();
 }
@@ -23,7 +27,8 @@ class _StatusFilterDialogState extends State<StatusFilterDialog> {
   @override
   void initState() {
     super.initState();
-    _currentSelection = widget.selectedOption;
+    _currentSelection =
+        widget.selectedOption?.toLowerCase(); // Ensure lowercase
   }
 
   @override
@@ -39,14 +44,15 @@ class _StatusFilterDialogState extends State<StatusFilterDialog> {
           mainAxisSize: MainAxisSize.min,
           children: widget.options
               .map((option) => RadioListTile<String>(
-                    title: Text(option),
-                    value: option,
+                    title: Text(widget._getDisplayText(option)),
+                    value: option.toLowerCase(), // Ensure lowercase
                     groupValue: _currentSelection,
                     onChanged: (value) {
                       setState(() {
                         _currentSelection = value;
                       });
                       widget.onOptionSelected(value);
+                      Navigator.pop(context);
                     },
                   ))
               .toList(),
