@@ -631,6 +631,7 @@ class _HomePageState extends State<HomePage> {
                                                     .format(DateTime.now()),
                                                 style: TextStyle(
                                                   fontSize: 28,
+                                                  fontFamily: 'Poppins',
                                                   fontWeight: FontWeight.w800,
                                                   color: Theme.of(context)
                                                               .brightness ==
@@ -644,6 +645,7 @@ class _HomePageState extends State<HomePage> {
                                                     .format(DateTime.now()),
                                                 style: TextStyle(
                                                   fontSize: 16,
+                                                  fontFamily: 'Poppins',
                                                   fontWeight: FontWeight.bold,
                                                   color: Theme.of(context)
                                                               .brightness ==
