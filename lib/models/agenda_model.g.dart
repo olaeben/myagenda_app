@@ -17,6 +17,7 @@ class AgendaModelAdapter extends TypeAdapter<AgendaModel> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return AgendaModel(
+      id: fields[9] as String?,
       title: fields[0] as String,
       category: fields[1] as String?,
       status: fields[2] as bool,
@@ -24,13 +25,15 @@ class AgendaModelAdapter extends TypeAdapter<AgendaModel> {
       selected: fields[4] as bool,
       description: fields[5] as String?,
       createdAt: fields[6] as DateTime?,
+      notificationFrequency: fields[7] as String,
+      updatedAt: fields[8] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, AgendaModel obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.title)
       ..writeByte(1)
@@ -44,7 +47,13 @@ class AgendaModelAdapter extends TypeAdapter<AgendaModel> {
       ..writeByte(5)
       ..write(obj.description)
       ..writeByte(6)
-      ..write(obj.createdAt);
+      ..write(obj.createdAt)
+      ..writeByte(7)
+      ..write(obj.notificationFrequency)
+      ..writeByte(8)
+      ..write(obj.updatedAt)
+      ..writeByte(9)
+      ..write(obj.id);
   }
 
   @override

@@ -14,24 +14,53 @@ class AgendaSearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
+    final isLightMode = Theme.of(context).brightness == Brightness.light;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isLightMode ? Colors.white : Colors.grey[850],
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha((0.05 * 255).round()),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: TextField(
         controller: controller,
         onChanged: onChanged,
+        style: TextStyle(
+          fontSize: 16,
+          color: isLightMode ? Colors.black87 : Colors.white,
+          fontFamily: 'Poppins',
+        ),
         decoration: InputDecoration(
           hintText: 'Search by agenda...',
-          prefixIcon: Icon(Icons.search),
+          hintStyle: TextStyle(
+            color: isLightMode ? Colors.grey[400] : Colors.grey[500],
+            fontFamily: 'Poppins',
+          ),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            color: isLightMode ? Colors.grey[400] : Colors.grey[500],
+          ),
           suffixIcon: controller.text.isNotEmpty
               ? IconButton(
-                  icon: Icon(Icons.clear),
+                  icon: Icon(
+                    Icons.clear_rounded,
+                    color: isLightMode ? Colors.grey[400] : Colors.grey[500],
+                  ),
                   onPressed: onClear,
                 )
               : null,
-          border: InputBorder.none,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+          fillColor: Colors.transparent,
           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
       ),

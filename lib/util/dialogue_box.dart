@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:myagenda_app/util/mybutton.dart';
-import '../widgets/category_selector.dart';
 import '../widgets/custom_text.dart';
 
 class DialogueBox extends StatefulWidget {
@@ -8,6 +6,7 @@ class DialogueBox extends StatefulWidget {
   final DateTime? initialDeadline;
   final String? initialCategory;
   final String? initialDescription;
+  final String? initialNotificationFrequency;
   final List<String> categories;
   final Function(String) onCategoryDeleted;
   final bool Function(Map<String, dynamic>)? onSave;
@@ -19,10 +18,11 @@ class DialogueBox extends StatefulWidget {
     this.initialDeadline,
     this.initialCategory,
     this.initialDescription,
+    this.initialNotificationFrequency,
     required this.categories,
     required this.onCategoryDeleted,
     this.onSave,
-    this.isEditing = false, // Add this parameter
+    this.isEditing = false,
   }) : super(key: key);
 
   @override
@@ -33,12 +33,20 @@ class _DialogueBoxState extends State<DialogueBox> {
   late TextEditingController _controller;
   late DateTime _deadline;
   String? _selectedCategory;
+  String _selectedNotificationFrequency = 'Daily';
   bool _isInternalController = false;
   String? _errorMessage;
   String _description = '';
   DateTime? selectedDate;
   TimeOfDay? selectedTime;
   TextEditingController _descriptionController = TextEditingController();
+
+  final List<String> _notificationFrequencies = [
+    'Daily',
+    'Weekly',
+    'Bi-Weekly',
+    'Monthly'
+  ];
 
   @override
   void initState() {
@@ -53,6 +61,8 @@ class _DialogueBoxState extends State<DialogueBox> {
     _deadline =
         widget.initialDeadline ?? DateTime.now().add(Duration(hours: 1));
     _selectedCategory = widget.initialCategory ?? 'Default';
+    _selectedNotificationFrequency =
+        widget.initialNotificationFrequency ?? 'Daily';
 
     // Initialize description controller with initial description
     _description = widget.initialDescription ?? '';
@@ -138,9 +148,8 @@ class _DialogueBoxState extends State<DialogueBox> {
                             fontSize: 14,
                             fontWeight: FontWeight.normal,
                             fontFamily: 'Poppins',
-                            color: isLightMode
-                                ? Colors.brown.shade800
-                                : Colors.brown.shade100,
+                            color:
+                                isLightMode ? Colors.black87 : Colors.white70,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -173,9 +182,8 @@ class _DialogueBoxState extends State<DialogueBox> {
                             fontWeight: FontWeight.normal,
                             fontSize: 14,
                             fontFamily: 'Poppins',
-                            color: isLightMode
-                                ? Colors.brown.shade800
-                                : Colors.brown.shade100,
+                            color:
+                                isLightMode ? Colors.black87 : Colors.white70,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -199,12 +207,18 @@ class _DialogueBoxState extends State<DialogueBox> {
                         const SizedBox(height: 16),
                         _buildCategoryField(),
                         const SizedBox(height: 16),
+                        _buildNotificationFrequencyField(),
+                        const SizedBox(height: 16),
                         Row(
                           children: [
                             Expanded(
                               child: TextButton.icon(
                                 onPressed: () => _selectDate(context),
-                                icon: const Icon(Icons.calendar_today),
+                                icon: Icon(
+                                  Icons.calendar_today,
+                                  color:
+                                      isLightMode ? Colors.black : Colors.white,
+                                ),
                                 label: Text(
                                   selectedDate == null
                                       ? 'Select Date'
@@ -237,7 +251,7 @@ class _DialogueBoxState extends State<DialogueBox> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withAlpha((0.1 * 255).round()),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -283,6 +297,7 @@ class _DialogueBoxState extends State<DialogueBox> {
                         'category': _selectedCategory ??
                             widget.initialCategory ??
                             'Default',
+                        'notificationFrequency': _selectedNotificationFrequency,
                       };
 
                       // If onSave is provided and returns false, don't pop
@@ -294,8 +309,10 @@ class _DialogueBoxState extends State<DialogueBox> {
                       Navigator.of(context).pop(result);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.brown[700],
-                      foregroundColor: Colors.white,
+                      backgroundColor:
+                          isLightMode ? Colors.black : Colors.white,
+                      foregroundColor:
+                          isLightMode ? Colors.white : Colors.black,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 100, vertical: 16),
                       shape: RoundedRectangleBorder(
@@ -417,7 +434,7 @@ class _DialogueBoxState extends State<DialogueBox> {
             fontSize: 14,
             fontWeight: FontWeight.normal,
             fontFamily: 'Poppins',
-            color: isLightMode ? Colors.brown.shade800 : Colors.brown.shade100,
+            color: isLightMode ? Colors.black87 : Colors.white70,
           ),
         ),
         const SizedBox(height: 12),
@@ -464,7 +481,7 @@ class _DialogueBoxState extends State<DialogueBox> {
                     padding: EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? Colors.brown[700]
+                          ? (isLightMode ? Colors.black : Colors.black)
                           : (isLightMode ? Colors.grey[100] : Colors.grey[800]),
                       borderRadius: BorderRadius.circular(24),
                     ),
@@ -494,5 +511,83 @@ class _DialogueBoxState extends State<DialogueBox> {
     setState(() {
       _errorMessage = message;
     });
+  }
+
+  Widget _buildNotificationFrequencyField() {
+    final isLightMode = Theme.of(context).brightness == Brightness.light;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Notification Frequency',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.normal,
+            fontFamily: 'Poppins',
+            color: isLightMode ? Colors.black87 : Colors.white70,
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 50,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                margin: EdgeInsets.only(right: 10),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isLightMode ? Colors.grey[300]! : Colors.grey[700]!,
+                    width: 1,
+                  ),
+                ),
+                child: Icon(
+                  Icons.notifications,
+                  size: 24,
+                  color: isLightMode ? Colors.black54 : Colors.white70,
+                ),
+              ),
+
+              // Frequency options
+              ..._notificationFrequencies.map((frequency) {
+                final isSelected = frequency == _selectedNotificationFrequency;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedNotificationFrequency = frequency;
+                    });
+                  },
+                  child: Container(
+                    margin: EdgeInsets.only(right: 10),
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? (isLightMode ? Colors.black : Colors.black)
+                          : (isLightMode ? Colors.grey[100] : Colors.grey[800]),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      frequency,
+                      style: TextStyle(
+                        color: isSelected
+                            ? Colors.white
+                            : (isLightMode ? Colors.black87 : Colors.white70),
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }

@@ -7,6 +7,7 @@ class FilterBar extends StatelessWidget {
   final String? selectedCategory;
   final DateTimeRange? selectedDateRange;
   final String? selectedStatus;
+  final String? searchFilter;
   final Function(String?) onCategorySelected;
   final Function(DateTimeRange?) onDateRangeSelected;
   final Function(String?) onStatusSelected;
@@ -19,6 +20,7 @@ class FilterBar extends StatelessWidget {
     this.selectedCategory,
     this.selectedDateRange,
     this.selectedStatus,
+    this.searchFilter,
     required this.onCategorySelected,
     required this.onDateRangeSelected,
     required this.onStatusSelected,
@@ -34,7 +36,7 @@ class FilterBar extends StatelessWidget {
         Row(
           children: [
             const Spacer(),
-            if (selectedCategory != null || selectedDateRange != null)
+            if (selectedCategory != null || selectedDateRange != null || searchFilter != null || selectedStatus != null)
               TextButton(
                 onPressed: onClearFilters,
                 child: const Text(
@@ -50,7 +52,8 @@ class FilterBar extends StatelessWidget {
             Icon(
               Icons.filter_list,
               size: 20,
-              color: isLightMode ? Colors.brown.shade800 : Colors.brown.shade100,
+              color:
+                  isLightMode ? Colors.brown.shade800 : Colors.brown.shade100,
             ),
             const SizedBox(width: 24),
             _buildFilterButton(
@@ -64,7 +67,7 @@ class FilterBar extends StatelessWidget {
               child: Icon(
                 Icons.calendar_today,
                 size: 24,
-                color: isLightMode ? Colors.brown.shade800 : Colors.brown.shade100,
+                color: isLightMode ? Colors.black : Colors.white,
               ),
             ),
           ],
@@ -79,6 +82,12 @@ class FilterBar extends StatelessWidget {
       height: 36, // Fixed height
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
+          backgroundColor: Theme.of(context).brightness == Brightness.light
+              ? Colors.black
+              : Colors.white,
+          foregroundColor: Theme.of(context).brightness == Brightness.light
+              ? Colors.white
+              : Colors.black,
           padding: const EdgeInsets.symmetric(horizontal: 16),
         ),
         onPressed: onPressed,

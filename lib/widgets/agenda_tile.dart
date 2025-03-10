@@ -49,6 +49,8 @@ class AgendaTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final isExpired = !agenda.status && now.isAfter(agenda.deadline);
     final isLightMode = Theme.of(context).brightness == Brightness.light;
 
     return Dismissible(
@@ -94,16 +96,17 @@ class AgendaTile extends StatelessWidget {
             context: context,
             builder: (BuildContext context) {
               return AlertDialog(
-                title: Text('Delete Agenda'),
-                content: Text('Are you sure you want to delete this agenda?'),
+                title: CustomText('Delete Agenda'),
+                content:
+                    CustomText2('Are you sure you want to delete this agenda?'),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(false),
-                    child: Text('Cancel'),
+                    child: CustomText2('Cancel'),
                   ),
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(true),
-                    child: Text('Delete'),
+                    child: CustomText2('Delete'),
                   ),
                 ],
               );
@@ -116,15 +119,22 @@ class AgendaTile extends StatelessWidget {
         }
       },
       child: Container(
-        margin: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        margin: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
           color: isLightMode ? Colors.white : Colors.grey[850],
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isLightMode ? Colors.grey[300]! : Colors.grey[800]!,
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: Offset(0, 2),
+              color: isLightMode
+                  ? Colors.black.withOpacity(0.1)
+                  : Colors.white.withOpacity(0.1),
+              blurRadius: 25,
+              spreadRadius: 3,
+              offset: Offset(0, 8),
             ),
           ],
         ),
@@ -173,47 +183,48 @@ class AgendaTile extends StatelessWidget {
                                   horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: isLightMode
-                                    ? Colors.grey[100]
-                                    : Colors.grey[800],
+                                    ? (agenda.selected
+                                        ? Colors.black
+                                        : Colors.grey[100])
+                                    : (agenda.selected
+                                        ? Colors.white
+                                        : Colors.grey[800]),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: Text(
+                              child: CustomText2(
                                 agenda.category ?? 'Default',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: isLightMode
-                                      ? Colors.black54
-                                      : Colors.white70,
-                                ),
+                                fontSize: 12,
+                                color: isLightMode
+                                    ? (agenda.selected
+                                        ? Colors.white
+                                        : Colors.black)
+                                    : (agenda.selected
+                                        ? Colors.black
+                                        : Colors.white),
                               ),
                             ),
                             Spacer(),
-                            Text(
+                            CustomText2(
                               _getTimeLeft(),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: _getTimeColor(context),
-                              ),
+                              fontSize: 12,
+                              color: _getTimeColor(context),
                             ),
                           ],
                         ),
                         SizedBox(height: 8),
-                        Text(
+                        CustomText(
                           agenda.title,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            decoration: agenda.status
-                                ? TextDecoration.lineThrough
-                                : null,
-                            color: agenda.status
-                                ? isLightMode
-                                    ? Colors.grey
-                                    : Colors.grey[400]
-                                : isLightMode
-                                    ? Colors.black87
-                                    : Colors.white,
-                          ),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: agenda.status
+                              ? isLightMode
+                                  ? Colors.grey
+                                  : Colors.grey[400]
+                              : isLightMode
+                                  ? Colors.black
+                                  : Colors.white,
+                          // Note: TextDecoration is not directly supported in CustomText
+                          // We would need to extend CustomText to support this if needed
                         ),
                       ],
                     ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/custom_text.dart';
 
 class MyButton extends StatelessWidget {
   final String text;
@@ -19,9 +20,9 @@ class MyButton extends StatelessWidget {
         backgroundColor: Colors.grey.shade400,
       ),
       onPressed: onPressed,
-      child: Text(
+      child: CustomText2(
         text,
-        style: TextStyle(color: textColor, fontFamily: 'Poppins'),
+        color: textColor,
       ),
     );
   }

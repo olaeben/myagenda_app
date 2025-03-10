@@ -3,12 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'pages/splash_screen.dart';
 import 'models/agenda_adapter.dart';
-import 'services/notification_service.dart';
-import 'package:timezone/data/latest.dart' as tz;
+import 'pages/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'services/notification_service.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -74,17 +74,49 @@ class _MyAppState extends State<MyApp> {
           debugShowCheckedModeBanner: false,
           title: 'My Agenda',
           theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.brown.shade100,
-              brightness: Brightness.light,
+            colorScheme: ColorScheme.light(
+              primary: Colors.black,
+              onPrimary: Colors.white,
+              secondary: Colors.black,
+              onSecondary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+              background: Colors.white,
+              onBackground: Colors.black,
+              error: Colors.red,
+              onError: Colors.white,
             ),
+            scaffoldBackgroundColor: Colors.white,
+            appBarTheme: AppBarTheme(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+              iconTheme: IconThemeData(color: Colors.black),
+            ),
+            iconTheme: IconThemeData(color: Colors.black),
+            cardColor: Colors.white,
             useMaterial3: true,
           ),
           darkTheme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.brown.shade100,
-              brightness: Brightness.dark,
+            colorScheme: ColorScheme.dark(
+              primary: Colors.white,
+              onPrimary: Colors.black,
+              secondary: Colors.white,
+              onSecondary: Colors.black,
+              surface: Colors.black,
+              onSurface: Colors.white,
+              background: Colors.black,
+              onBackground: Colors.white,
+              error: Colors.red,
+              onError: Colors.white,
             ),
+            scaffoldBackgroundColor: Colors.black,
+            appBarTheme: AppBarTheme(
+              backgroundColor: Colors.black,
+              foregroundColor: Colors.white,
+              iconTheme: IconThemeData(color: Colors.white),
+            ),
+            iconTheme: IconThemeData(color: Colors.white),
+            cardColor: Colors.black,
             useMaterial3: true,
           ),
           themeMode: currentThemeMode,

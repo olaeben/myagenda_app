@@ -133,13 +133,14 @@ class _CategoryDialogState extends State<CategoryDialog> {
                       Navigator.pop(context, category);
                     },
                     style: ElevatedButton.styleFrom(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      backgroundColor: isLightMode ? Colors.black : Colors.white,
+                      foregroundColor: isLightMode ? Colors.white : Colors.black,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: Text('Add'),
+                    child: Text('Create'),
                   ),
                 ],
               ),

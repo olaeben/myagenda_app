@@ -204,8 +204,8 @@ class _CategorySelectorState extends State<CategorySelector> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.brown[700],
-                    foregroundColor: Colors.white,
+                    backgroundColor: isLightMode ? Colors.black : Colors.white,
+                    foregroundColor: isLightMode ? Colors.white : Colors.black,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 100, vertical: 16),
                     shape: RoundedRectangleBorder(

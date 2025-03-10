@@ -1,10 +1,10 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/agenda_model.dart';
-import 'custom_text.dart';
 import 'package:slide_to_act/slide_to_act.dart';
 
-class AgendaDetailsModal extends StatelessWidget {
+import 'custom_text.dart';
+
+class AgendaDetailsModal extends StatefulWidget {
   final AgendaModel agenda;
   final VoidCallback onComplete;
 
@@ -14,9 +14,14 @@ class AgendaDetailsModal extends StatelessWidget {
     required this.onComplete,
   }) : super(key: key);
 
+  @override
+  State<AgendaDetailsModal> createState() => _AgendaDetailsModalState();
+}
+
+class _AgendaDetailsModalState extends State<AgendaDetailsModal> {
   String _getTimeLeft() {
     final now = DateTime.now();
-    final difference = agenda.deadline.difference(now);
+    final difference = widget.agenda.deadline.difference(now);
 
     if (difference.isNegative) {
       return 'Expired';
@@ -49,6 +54,15 @@ class AgendaDetailsModal extends StatelessWidget {
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
+  void _handleComplete() {
+    widget.onComplete();
+    Future.delayed(Duration(milliseconds: 300), () {
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final isLightMode = Theme.of(context).brightness == Brightness.light;
@@ -78,7 +92,6 @@ class AgendaDetailsModal extends StatelessWidget {
                 ),
               ),
             ),
-
             Flexible(
               child: SingleChildScrollView(
                 child: Padding(
@@ -97,134 +110,102 @@ class AgendaDetailsModal extends StatelessWidget {
                           ),
                           borderRadius: BorderRadius.all(Radius.circular(8)),
                         ),
-                        child: Text(
-                          agenda.category ?? 'Default',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color:
-                                isLightMode ? Colors.black54 : Colors.white70,
-                          ),
+                        child: CustomText2(
+                          widget.agenda.category ?? 'Default',
+                          fontSize: 13,
+                          color: isLightMode ? Colors.black54 : Colors.white70,
                         ),
                       ),
                       SizedBox(height: 10),
-                      Text(
-                        agenda.title,
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: isLightMode ? Colors.black : Colors.white,
-                        ),
+                      CustomText(
+                        widget.agenda.title,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: isLightMode ? Colors.black : Colors.white,
                       ),
                       SizedBox(height: 12),
-                      Text(
+                      CustomText2(
                         'Time Left',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontFamily: 'Poppins',
-                          color: isLightMode ? Colors.black54 : Colors.white70,
-                        ),
+                        fontSize: 13,
+                        color: isLightMode ? Colors.black54 : Colors.white70,
                       ),
-                      Text(
+                      CustomText(
                         _getTimeLeft(),
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Poppins',
-                          color: isLightMode ? Colors.black : Colors.white,
-                        ),
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: isLightMode ? Colors.black : Colors.white,
                       ),
-                      Text(
-                        _formatDate(agenda.deadline),
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.bold,
-                          color: isLightMode ? Colors.black54 : Colors.white70,
-                        ),
+                      CustomText2(
+                        _formatDate(widget.agenda.deadline),
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: isLightMode ? Colors.black54 : Colors.white70,
                       ),
                       SizedBox(height: 20),
-                      if (agenda.description != null &&
-                          agenda.description!.isNotEmpty)
+                      if (widget.agenda.description != null &&
+                          widget.agenda.description!.isNotEmpty)
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            CustomText2(
                               'Description',
-                              style: TextStyle(
-                                fontWeight: FontWeight.normal,
-                                fontSize: 14,
-                                fontFamily: "Poppins",
-                                color: isLightMode
-                                    ? Colors.black54
-                                    : Colors.white70,
-                              ),
+                              fontWeight: FontWeight.normal,
+                              fontSize: 14,
+                              color:
+                                  isLightMode ? Colors.black54 : Colors.white70,
                             ),
                             SizedBox(height: 4),
                             Container(
                               width: double.infinity,
                               alignment: Alignment.centerLeft,
-                              child: Text(
-                                agenda.description!,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.normal,
-                                  fontFamily: 'Poppins',
-                                  color:
-                                      isLightMode ? Colors.black : Colors.white,
-                                ),
+                              child: CustomText2(
+                                widget.agenda.description!,
+                                fontSize: 13,
+                                fontWeight: FontWeight.normal,
+                                color:
+                                    isLightMode ? Colors.black : Colors.white,
                                 textAlign: TextAlign.left,
                               ),
                             ),
                             SizedBox(height: 20),
                           ],
                         ),
-                      Text(
+                      CustomText2(
                         'Created on',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontFamily: 'Poppins',
-                          color: isLightMode ? Colors.black54 : Colors.white70,
-                        ),
+                        fontSize: 13,
+                        color: isLightMode ? Colors.black54 : Colors.white70,
                       ),
                       SizedBox(height: 6),
-                      Text(
-                        _formatDate(agenda.createdAt ?? DateTime.now()),
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.bold,
-                          color: isLightMode ? Colors.black54 : Colors.white70,
-                        ),
+                      CustomText2(
+                        _formatDate(widget.agenda.createdAt ?? DateTime.now()),
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: isLightMode ? Colors.black54 : Colors.white70,
                       ),
                     ],
                   ),
                 ),
               ),
             ),
-
-            // Slide action remains at the bottom
-            if (!agenda.status)
+            if (!widget.agenda.status)
               Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: SlideAction(
-                  text: 'Slide to Complete',
+                  text: '>> Swipe to Complete >>',
                   textStyle: TextStyle(
                     color: isLightMode ? Colors.black54 : Colors.white70,
                     fontSize: 16,
                     fontFamily: "Poppins",
                   ),
+                  alignment: Alignment.center,
                   outerColor: isLightMode ? Colors.grey[100] : Colors.grey[700],
-                  innerColor:
-                      isLightMode ? Colors.brown[500] : Colors.brown[700],
+                  innerColor: isLightMode ? Colors.black : Colors.white,
                   sliderButtonIcon: Icon(
                     Icons.check,
-                    color: Colors.white,
+                    color: isLightMode ? Colors.white : Colors.black,
                   ),
                   onSubmit: () {
-                    onComplete();
-                    Future.delayed(Duration(milliseconds: 300), () {
-                      Navigator.pop(context);
-                    });
+                    _handleComplete();
                     return Future.value(false);
                   },
                 ),

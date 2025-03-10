@@ -3,18 +3,15 @@ import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:myagenda_app/widgets/custom_text.dart';
 import '../models/agenda_model.dart';
+import '../services/notification_service.dart';
 import '../util/dialogue_box.dart';
 import '../widgets/agenda_search_delegate.dart';
 import '../widgets/agenda_tile.dart';
 import '../widgets/filter_dialog.dart';
-import '../widgets/search_bar.dart';
 import '../widgets/stats_card.dart';
 import '../widgets/filter_bar.dart';
-import '../theme/theme.dart';
-import '../services/notification_service.dart';
 import 'dart:async';
 import 'package:rive_animated_icon/rive_animated_icon.dart';
-import 'package:slide_to_act/slide_to_act.dart';
 
 class HomePage extends StatefulWidget {
   final VoidCallback onToggleTheme;
@@ -29,7 +26,7 @@ final _categoriesBox = Hive.box('categories');
 
 class _HomePageState extends State<HomePage> {
   final _searchController = TextEditingController();
-  final NotificationService _notificationService = NotificationService();
+  final ScrollController _scrollController = ScrollController();
   final _myAgenda = Hive.box('myAgenda');
   List<AgendaModel> _agendas = [];
   List<AgendaModel> _filteredAgendas = [];
@@ -41,18 +38,70 @@ class _HomePageState extends State<HomePage> {
   Timer? _refreshTimer;
   bool _isSpeedDialOpen = false;
   Set<String> _allCategories = {'Default'};
+  String? _searchFilter;
+  List<String> _selectedStatusFilters = [];
+  late NotificationService _notificationService;
 
   @override
   void initState() {
     super.initState();
     _loadCategories();
     _loadAgendas();
+    _notificationService = NotificationService();
     _notificationService.initNotification();
-
-    _checkExpiredAgendas();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
+    _refreshTimer = Timer.periodic(Duration(minutes: 1), (timer) {
       _checkExpiredAgendas();
     });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadAgendas() async {
+    final savedAgendas = _myAgenda.get('myAgenda');
+    if (savedAgendas != null) {
+      setState(() {
+        try {
+          _agendas = (savedAgendas as List)
+              .map((agendaMap) {
+                try {
+                  return AgendaModel(
+                    title: agendaMap['title'] ?? 'Untitled',
+                    category: agendaMap['category'],
+                    status: agendaMap['status'] ?? false,
+                    deadline: agendaMap['deadline'] != null
+                        ? DateTime.parse(agendaMap['deadline'])
+                        : DateTime.now(),
+                    description: agendaMap['description'],
+                    createdAt: agendaMap['createdAt'] != null
+                        ? DateTime.parse(agendaMap['createdAt'])
+                        : DateTime.now(),
+                    updatedAt: agendaMap['updatedAt'] != null
+                        ? DateTime.parse(agendaMap['updatedAt'])
+                        : DateTime.now(),
+                    notificationFrequency:
+                        agendaMap['notificationFrequency'] ?? 'Daily',
+                  );
+                } catch (e) {
+                  debugPrint('Error parsing agenda: $e');
+                  return null;
+                }
+              })
+              .where((agenda) => agenda != null)
+              .cast<AgendaModel>()
+              .toList();
+          _updateFilteredAgendas();
+        } catch (e) {
+          debugPrint('Error loading agendas: $e');
+          _agendas = [];
+        }
+      });
+    }
   }
 
   void _loadCategories() {
@@ -63,32 +112,18 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  @override
-  void dispose() {
-    _refreshTimer?.cancel();
-    super.dispose();
-  }
-
-  void _loadAgendas() {
-    final List<dynamic> agendaData = _myAgenda.get('myAgenda') ?? [];
-    _agendas = agendaData.map((data) {
-      final Map<String, dynamic> jsonData = Map<String, dynamic>.from(data);
-      return AgendaModel.fromJson(jsonData);
-    }).toList();
-    _updateFilteredAgendas();
-    _updateCategories();
+  Future<void> _saveCategories() async {
+    await _categoriesBox.put('categories', _categories.toList());
   }
 
   void _updateCategories() {
-    // _categories = _allCategories;
     Set<String> updatedCategories = {'Default'};
 
     for (var agenda in _agendas) {
       if (agenda.category != null && agenda.category!.isNotEmpty) {
-        _categories.add(agenda.category!);
+        updatedCategories.add(agenda.category!);
       }
     }
-    updatedCategories.addAll(_categories);
 
     setState(() {
       _categories = updatedCategories;
@@ -96,33 +131,62 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  Future<void> _saveCategories() async {
-    await _categoriesBox.put('categories', _categories.toList());
+  void _clearSearchFilter() {
+    setState(() {
+      _searchFilter = null;
+      _updateFilteredAgendas();
+    });
   }
 
-  List<String> _selectedStatusFilters = [];
+  void _showSearch() async {
+    final AgendaModel? selectedAgenda = await showSearch(
+      context: context,
+      delegate: AgendaSearchDelegate(
+        agendas: _agendas,
+        onSearch: (query) {
+          setState(() {
+            _searchFilter = query.isEmpty ? null : query;
+            _updateFilteredAgendas();
+          });
+        },
+      ),
+    );
+
+    // Clear search filter if no agenda was selected
+    if (selectedAgenda == null) {
+      setState(() {
+        _searchFilter = null;
+        _searchController.clear();
+        _updateFilteredAgendas();
+      });
+    } else if (selectedAgenda.title.isNotEmpty) {
+      setState(() {
+        _searchFilter = selectedAgenda.title;
+        _updateFilteredAgendas();
+      });
+    }
+  }
 
   void _updateFilteredAgendas() {
+    if (!mounted) return;
     setState(() {
       _filteredAgendas = List.from(_agendas);
 
-// Apply search filter
-      if (_searchController.text.isNotEmpty) {
-        _filteredAgendas = _filteredAgendas
-            .where((agenda) => agenda.title
-                .toLowerCase()
-                .contains(_searchController.text.toLowerCase()))
-            .toList();
+      // Handle search filtering (either from search delegate or search controller)
+      final searchQuery =
+          _searchFilter?.toLowerCase() ?? _searchController.text.toLowerCase();
+      if (searchQuery.isNotEmpty) {
+        _filteredAgendas = _filteredAgendas.where((agenda) {
+          return agenda.title.toLowerCase().contains(searchQuery);
+        }).toList();
       }
 
-      // Apply category filter
       if (_selectedCategory != null && _selectedCategory != 'All') {
         _filteredAgendas = _filteredAgendas
             .where((agenda) => agenda.category == _selectedCategory)
             .toList();
       }
 
-      // Apply date range filter
       if (_selectedDateRange != null) {
         final startDate = DateTime(_selectedDateRange!.start.year,
             _selectedDateRange!.start.month, _selectedDateRange!.start.day);
@@ -176,7 +240,13 @@ class _HomePageState extends State<HomePage> {
           }
         }).toList();
       }
-      _filteredAgendas.sort((a, b) => a.deadline.compareTo(b.deadline));
+      _filteredAgendas.sort((a, b) {
+        DateTime aLatest =
+            a.updatedAt.isAfter(a.createdAt) ? a.updatedAt : a.createdAt;
+        DateTime bLatest =
+            b.updatedAt.isAfter(b.createdAt) ? b.updatedAt : b.createdAt;
+        return bLatest.compareTo(aLatest);
+      });
     });
   }
 
@@ -355,8 +425,10 @@ class _HomePageState extends State<HomePage> {
                               }
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.brown[700],
-                              foregroundColor: Colors.white,
+                              backgroundColor:
+                                  isLightMode ? Colors.black : Colors.white,
+                              foregroundColor:
+                                  isLightMode ? Colors.white : Colors.black,
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 100, vertical: 16),
                               shape: RoundedRectangleBorder(
@@ -406,6 +478,7 @@ class _HomePageState extends State<HomePage> {
         if (agenda.selected) {
           agenda.status = true;
           agenda.selected = false;
+          agenda.updatedAt = DateTime.now();
         }
       }
       _isMultiSelectMode = false;
@@ -418,15 +491,12 @@ class _HomePageState extends State<HomePage> {
       final selectedAgendas =
           _filteredAgendas.where((a) => a.selected).toList();
 
-      for (var agenda in selectedAgendas) {
-        await _notificationService.cancelNotifications(agenda.title.hashCode);
-      }
-
       setState(() {
         _agendas.removeWhere((agenda) => selectedAgendas.contains(agenda));
         _filteredAgendas
             .removeWhere((agenda) => selectedAgendas.contains(agenda));
         _isMultiSelectMode = false;
+        _updateCategories();
       });
 
       final agendaData = _agendas.map((a) => a.toJson()).toList();
@@ -449,7 +519,6 @@ class _HomePageState extends State<HomePage> {
     await _myAgenda.clear();
     await _myAgenda.put('myAgenda', agendaData);
 
-    // Update UI after save
     setState(() {
       _updateFilteredAgendas();
       _updateCategories();
@@ -467,7 +536,6 @@ class _HomePageState extends State<HomePage> {
     for (var agenda in _agendas) {
       if (!agenda.status && now.isAfter(agenda.deadline)) {
         needsUpdate = true;
-        _notificationService.cancelNotifications(agenda.title.hashCode);
       }
     }
 
@@ -494,7 +562,9 @@ class _HomePageState extends State<HomePage> {
         }
       },
       child: Container(
-        decoration: isLightMode ? lightGradient : darkGradient,
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+        ),
         child: Scaffold(
           backgroundColor: Colors.transparent,
           body: SafeArea(
@@ -576,8 +646,8 @@ class _HomePageState extends State<HomePage> {
                                                   color: Theme.of(context)
                                                               .brightness ==
                                                           Brightness.light
-                                                      ? Colors.brown.shade800
-                                                      : Colors.brown.shade100,
+                                                      ? Colors.black
+                                                      : Colors.white,
                                                 ),
                                               ),
                                               Text(
@@ -589,40 +659,109 @@ class _HomePageState extends State<HomePage> {
                                                   color: Theme.of(context)
                                                               .brightness ==
                                                           Brightness.light
-                                                      ? Colors.brown.shade800
-                                                      : Colors.brown.shade100,
+                                                      ? Colors.black
+                                                      : Colors.white,
                                                 ),
                                               ),
                                             ],
                                           ),
                                           Row(
                                             children: [
-                                              IconButton(
-                                                icon: Icon(Icons.search),
-                                                onPressed: () {
-                                                  showSearch(
-                                                    context: context,
-                                                    delegate:
-                                                        AgendaSearchDelegate(
-                                                      agendas: _agendas,
-                                                      onSearch: (query) {
-                                                        _searchController.text =
-                                                            query;
-                                                        _updateFilteredAgendas();
-                                                      },
-                                                    ),
-                                                  );
-                                                },
-                                              ),
-                                              IconButton(
-                                                icon: Icon(
-                                                  Theme.of(context)
+                                              Container(
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: Theme.of(context)
                                                               .brightness ==
                                                           Brightness.light
-                                                      ? Icons.dark_mode
-                                                      : Icons.light_mode,
+                                                      ? Colors.black
+                                                      : Colors.white,
                                                 ),
-                                                onPressed: widget.onToggleTheme,
+                                                child: Padding(
+                                                  padding: EdgeInsets.all(0.1),
+                                                  child: IconButton(
+                                                      icon: Icon(
+                                                        Icons.search,
+                                                        color: Theme.of(context)
+                                                                    .brightness ==
+                                                                Brightness.light
+                                                            ? Colors.white
+                                                            : Colors.black,
+                                                        size: 23,
+                                                      ),
+                                                      onPressed: () {
+                                                        showSearch(
+                                                          context: context,
+                                                          delegate:
+                                                              AgendaSearchDelegate(
+                                                            agendas: _agendas,
+                                                            onSearch: (query) {
+                                                              setState(() {
+                                                                _searchFilter =
+                                                                    query.isNotEmpty
+                                                                        ? query
+                                                                        : null;
+                                                                _updateFilteredAgendas();
+                                                              });
+                                                            },
+                                                          ),
+                                                        ).then(
+                                                            (selectedAgenda) {
+                                                          if (mounted) {
+                                                            setState(() {
+                                                              _searchController
+                                                                  .clear();
+                                                              if (_searchFilter
+                                                                      ?.isEmpty ??
+                                                                  false) {
+                                                                _searchFilter =
+                                                                    null;
+                                                              }
+                                                              if (selectedAgenda !=
+                                                                      null &&
+                                                                  selectedAgenda
+                                                                      .title
+                                                                      .isNotEmpty) {
+                                                                _searchFilter =
+                                                                    selectedAgenda
+                                                                        .title;
+                                                              }
+                                                              _updateFilteredAgendas();
+                                                            });
+                                                          }
+                                                        });
+                                                      }),
+                                                ),
+                                              ),
+                                              SizedBox(width: 8),
+                                              Container(
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: Theme.of(context)
+                                                              .brightness ==
+                                                          Brightness.light
+                                                      ? Colors.black
+                                                      : Colors.white,
+                                                ),
+                                                child: Padding(
+                                                  padding: EdgeInsets.all(0.1),
+                                                  child: IconButton(
+                                                    icon: Icon(
+                                                      Theme.of(context)
+                                                                  .brightness ==
+                                                              Brightness.light
+                                                          ? Icons.dark_mode
+                                                          : Icons.light_mode,
+                                                      color: Theme.of(context)
+                                                                  .brightness ==
+                                                              Brightness.light
+                                                          ? Colors.white
+                                                          : Colors.black,
+                                                      size: 23,
+                                                    ),
+                                                    onPressed:
+                                                        widget.onToggleTheme,
+                                                  ),
+                                                ),
                                               ),
                                             ],
                                           ),
@@ -646,6 +785,7 @@ class _HomePageState extends State<HomePage> {
                                         selectedCategory: _selectedCategory,
                                         selectedDateRange: _selectedDateRange,
                                         selectedStatus: _selectedStatus,
+                                        searchFilter: _searchFilter,
                                         onCategorySelected: (category) {
                                           setState(() {
                                             _selectedCategory = category;
@@ -671,6 +811,8 @@ class _HomePageState extends State<HomePage> {
                                             _selectedDateRange = null;
                                             _selectedStatus = null;
                                             _selectedStatusFilters = [];
+                                            _searchFilter = null;
+                                            _searchController.clear();
                                             _updateFilteredAgendas();
                                           });
                                         },
@@ -697,52 +839,83 @@ class _HomePageState extends State<HomePage> {
                                   ],
                                 ),
                               ),
-                              ListView.builder(
-                                shrinkWrap: true,
-                                physics: NeverScrollableScrollPhysics(),
-                                itemCount: _filteredAgendas.length,
-                                itemBuilder: (context, index) {
-                                  return Padding(
-                                    padding: EdgeInsets.only(
-                                        bottom:
-                                            index == _filteredAgendas.length - 1
-                                                ? 80
-                                                : 0),
-                                    child: AgendaTile(
-                                      agenda: _filteredAgendas[index],
-                                      onStatusChanged: (value) {
-                                        setState(() {
-                                          _filteredAgendas[index].status =
-                                              value ?? false;
-                                          _saveAgendas();
-                                        });
-                                      },
-                                      onLongPress: () => _toggleMultiSelect(
-                                          _filteredAgendas[index]),
-                                      onTap: _isMultiSelectMode
-                                          ? () => _toggleMultiSelect(
-                                              _filteredAgendas[index])
-                                          : null,
-                                      showCheckbox: _isMultiSelectMode,
-                                      onEdit: () => _showAddAgendaDialog(
-                                        context,
-                                        agenda: _filteredAgendas[index],
+                              if (_filteredAgendas.isEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.all(32.0),
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        _searchFilter != null
+                                            ? 'No results found for "${_searchFilter}"'
+                                            : _searchController.text.isNotEmpty
+                                                ? 'No results found for "${_searchController.text}"'
+                                                : 'No agendas yet, click + to add',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          color: Colors.grey,
+                                        ),
+                                        textAlign: TextAlign.center,
                                       ),
-                                      onDelete: () {
-                                        final agenda = _filteredAgendas[index];
-                                        _notificationService
-                                            .cancelNotifications(
-                                                agenda.title.hashCode);
-                                        setState(() {
-                                          _agendas.remove(agenda);
-                                          _filteredAgendas.remove(agenda);
-                                          _saveAgendasToHive();
-                                        });
-                                      },
-                                    ),
-                                  );
-                                },
-                              ),
+                                      if (_searchFilter != null)
+                                        Padding(
+                                          padding:
+                                              const EdgeInsets.only(top: 16.0),
+                                          child: TextButton(
+                                            onPressed: _clearSearchFilter,
+                                            child: Text('Clear Search Filter'),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                )
+                              else
+                                ListView.builder(
+                                  shrinkWrap: true,
+                                  physics: NeverScrollableScrollPhysics(),
+                                  itemCount: _filteredAgendas.length,
+                                  itemBuilder: (context, index) {
+                                    return Padding(
+                                      padding: EdgeInsets.only(
+                                          bottom: index ==
+                                                  _filteredAgendas.length - 1
+                                              ? 80
+                                              : 0),
+                                      child: AgendaTile(
+                                        agenda: _filteredAgendas[index],
+                                        onStatusChanged: (value) {
+                                          setState(() {
+                                            _filteredAgendas[index].status =
+                                                value ?? false;
+                                            _saveAgendas();
+                                          });
+                                        },
+                                        onLongPress: () => _toggleMultiSelect(
+                                            _filteredAgendas[index]),
+                                        onTap: _isMultiSelectMode
+                                            ? () => _toggleMultiSelect(
+                                                _filteredAgendas[index])
+                                            : null,
+                                        showCheckbox: _isMultiSelectMode,
+                                        onEdit: () => _showAddAgendaDialog(
+                                          context,
+                                          agenda: _filteredAgendas[index],
+                                        ),
+                                        onDelete: () {
+                                          final agenda =
+                                              _filteredAgendas[index];
+                                          _notificationService
+                                              .cancelNotifications(
+                                                  agenda.title.hashCode);
+                                          setState(() {
+                                            _agendas.remove(agenda);
+                                            _filteredAgendas.remove(agenda);
+                                            _saveAgendasToHive();
+                                          });
+                                        },
+                                      ),
+                                    );
+                                  },
+                                ),
                             ],
                           ),
                         ),
@@ -805,6 +978,14 @@ class _HomePageState extends State<HomePage> {
                   FloatingActionButton.extended(
                     heroTag: 'addAgenda',
                     onPressed: () => _showAddAgendaDialog(context),
+                    backgroundColor:
+                        Theme.of(context).brightness == Brightness.light
+                            ? Colors.black
+                            : Colors.white,
+                    foregroundColor:
+                        Theme.of(context).brightness == Brightness.light
+                            ? Colors.white
+                            : Colors.black,
                     label: Text('Add Agenda'),
                     icon: Icon(Icons.event),
                   ),
@@ -816,6 +997,15 @@ class _HomePageState extends State<HomePage> {
                       _isSpeedDialOpen = !_isSpeedDialOpen;
                     });
                   },
+                  shape: CircleBorder(),
+                  backgroundColor:
+                      Theme.of(context).brightness == Brightness.light
+                          ? Colors.black
+                          : Colors.white,
+                  foregroundColor:
+                      Theme.of(context).brightness == Brightness.light
+                          ? Colors.white
+                          : Colors.black,
                   child: Icon(_isSpeedDialOpen ? Icons.close : Icons.add),
                 ),
               ],
@@ -855,7 +1045,6 @@ class _HomePageState extends State<HomePage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Handle bar
                       Center(
                         child: Container(
                           width: 40,
@@ -907,6 +1096,7 @@ class _HomePageState extends State<HomePage> {
               initialDeadline: agenda?.deadline,
               initialCategory: agenda?.category,
               initialDescription: agenda?.description,
+              initialNotificationFrequency: agenda?.notificationFrequency,
               categories: _categories.toList(),
               isEditing: agenda != null,
               onCategoryDeleted: (category) {
@@ -940,19 +1130,37 @@ class _HomePageState extends State<HomePage> {
     if (result != null && result is Map<String, dynamic>) {
       setState(() {
         if (agenda != null) {
+          _notificationService.cancelNotifications(agenda.title.hashCode);
           agenda.title = result['title'];
           agenda.deadline = result['deadline'];
           agenda.category = result['category'];
           agenda.description = result['description'];
           agenda.status = result['status'] ?? false;
+          agenda.updatedAt = DateTime.now();
+          if (!agenda.status) {
+            _notificationService.scheduleDeadlineNotifications(
+              id: agenda.title.hashCode,
+              title: agenda.title,
+              deadline: agenda.deadline,
+            );
+          }
         } else {
-          _agendas.add(AgendaModel(
+          final newAgenda = AgendaModel(
             status: false,
             title: result['title'],
             deadline: result['deadline'],
             category: result['category'],
             description: result['description'],
-          ));
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+          _agendas.add(newAgenda);
+          // Schedule notifications for new agenda
+          _notificationService.scheduleDeadlineNotifications(
+            id: newAgenda.title.hashCode,
+            title: newAgenda.title,
+            deadline: newAgenda.deadline,
+          );
         }
       });
 
@@ -974,21 +1182,33 @@ class _HomePageState extends State<HomePage> {
 
         setState(() {
           if (agenda != null) {
-            // Update existing agenda
+            _notificationService.cancelNotifications(agenda.title.hashCode);
             agenda.title = result['title'];
             agenda.deadline = result['deadline'];
             agenda.category = result['category'];
             agenda.description = result['description'];
             agenda.status = result['status'] ?? agenda.status;
+            if (!agenda.status) {
+              _notificationService.scheduleDeadlineNotifications(
+                id: agenda.title.hashCode,
+                title: agenda.title,
+                deadline: agenda.deadline,
+              );
+            }
           } else {
-            // Add new agenda
-            _agendas.add(AgendaModel(
+            final newAgenda = AgendaModel(
               status: false,
               title: result['title'],
               deadline: result['deadline'],
               category: result['category'],
               description: result['description'],
-            ));
+            );
+            _agendas.add(newAgenda);
+            _notificationService.scheduleDeadlineNotifications(
+              id: newAgenda.title.hashCode,
+              title: newAgenda.title,
+              deadline: newAgenda.deadline,
+            );
           }
         });
 

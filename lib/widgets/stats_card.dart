@@ -47,7 +47,7 @@ class _StatsCardState extends State<StatsCard> {
       } else {
         _selectedStatuses.add(status);
       }
-      
+
       if (widget.onStatusFilterChanged != null) {
         widget.onStatusFilterChanged!(_selectedStatuses);
       }
@@ -85,116 +85,135 @@ class _StatsCardState extends State<StatsCard> {
     final isLightMode = Theme.of(context).brightness == Brightness.light;
 
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 8),
-      padding: EdgeInsets.all(20),
+      width: double.infinity,
+      margin: EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: isLightMode ? Colors.white : Colors.grey[850],
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: Offset(0, 2),
+            color: isLightMode
+                ? Colors.black.withAlpha((0.1 * 255).round())
+                : Colors.white.withAlpha((0.1 * 255).round()),
+            blurRadius: 15,
+            spreadRadius: 1,
+            offset: Offset(0, 3),
           ),
         ],
       ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Overview',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Poppins',
-                  color: isLightMode ? Colors.black87 : Colors.white,
-                ),
-              ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: isLightMode ? Colors.grey[100] : Colors.grey[800],
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '${widget.totalAgendas} Agenda(s)',
+      child: Padding(
+        padding: EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Overview',
                   style: TextStyle(
-                    color: isLightMode ? Colors.black54 : Colors.white70,
-                    fontSize: 14,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                     fontFamily: 'Poppins',
+                    color: isLightMode ? Colors.black87 : Colors.white,
                   ),
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                flex: 3,
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: Stack(
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isLightMode ? Colors.grey[100] : Colors.grey[800],
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${widget.totalAgendas} Agenda(s)',
+                    style: TextStyle(
+                      color: isLightMode ? Colors.black54 : Colors.white70,
+                      fontSize: 14,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    child: Stack(
+                      children: [
+                        CircularStatusIndicator(
+                          values: widget.totalAgendas == 0
+                              ? {'Empty': 100}
+                              : {
+                                  'Completed': widget.completedPercentage,
+                                  'Pending': widget.pendingPercentage,
+                                  'Expired': widget.expiredPercentage,
+                                },
+                          size: double.infinity,
+                          strokeWidth: 12,
+                          emptyColor: isLightMode
+                              ? Colors.grey[200]!
+                              : Colors.grey[700]!,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(width: 24),
+                Expanded(
+                  flex: 4,
+                  child: Column(
                     children: [
-                      CircularStatusIndicator(
-                        values: widget.totalAgendas == 0
-                            ? {'Empty': 100}
-                            : {
-                                'Completed': widget.completedPercentage,
-                                'Pending': widget.pendingPercentage,
-                                'Expired': widget.expiredPercentage,
-                              },
-                        size: double.infinity,
-                        strokeWidth: 12,
-                        emptyColor:
-                            isLightMode ? Colors.grey[200]! : Colors.grey[700]!,
+                      _buildStatItem(
+                        context,
+                        label: 'Completed',
+                        value: widget.completedPercentage,
+                        count: (widget.completedPercentage *
+                                widget.totalAgendas /
+                                100)
+                            .round(),
+                        color: Colors.green,
+                        isSelected: _selectedStatuses.contains('completed'),
+                        onTap: () => _toggleStatus('completed'),
+                      ),
+                      SizedBox(height: 16),
+                      _buildStatItem(
+                        context,
+                        label: 'Pending',
+                        value: widget.pendingPercentage,
+                        count: (widget.pendingPercentage *
+                                widget.totalAgendas /
+                                100)
+                            .round(),
+                        color: Colors.orange,
+                        isSelected: _selectedStatuses.contains('pending'),
+                        onTap: () => _toggleStatus('pending'),
+                      ),
+                      SizedBox(height: 16),
+                      _buildStatItem(
+                        context,
+                        label: 'Expired',
+                        value: widget.expiredPercentage,
+                        count: (widget.expiredPercentage *
+                                widget.totalAgendas /
+                                100)
+                            .round(),
+                        color: Colors.red,
+                        isSelected: _selectedStatuses.contains('expired'),
+                        onTap: () => _toggleStatus('expired'),
                       ),
                     ],
                   ),
                 ),
-              ),
-              SizedBox(width: 24),
-              Expanded(
-                flex: 4,
-                child: Column(
-                  children: [
-                    _buildStatItem(
-                      context,
-                      label: 'Completed',
-                      value: widget.completedPercentage,
-                      count: (widget.completedPercentage * widget.totalAgendas / 100).round(),
-                      color: Colors.green,
-                      isSelected: _selectedStatuses.contains('completed'),
-                      onTap: () => _toggleStatus('completed'),
-                    ),
-                    SizedBox(height: 16),
-                    _buildStatItem(
-                      context,
-                      label: 'Pending',
-                      value: widget.pendingPercentage,
-                      count: (widget.pendingPercentage * widget.totalAgendas / 100).round(),
-                      color: Colors.orange,
-                      isSelected: _selectedStatuses.contains('pending'),
-                      onTap: () => _toggleStatus('pending'),
-                    ),
-                    SizedBox(height: 16),
-                    _buildStatItem(
-                      context,
-                      label: 'Expired',
-                      value: widget.expiredPercentage,
-                      count: (widget.expiredPercentage * widget.totalAgendas / 100).round(),
-                      color: Colors.red,
-                      isSelected: _selectedStatuses.contains('expired'),
-                      onTap: () => _toggleStatus('expired'),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -209,12 +228,11 @@ class _StatsCardState extends State<StatsCard> {
     bool isSelected = false,
   }) {
     final isLightMode = Theme.of(context).brightness == Brightness.light;
-    
-    // Determine the color based on selection state
-    final displayColor = _selectedStatuses.isEmpty || isSelected ? color : Colors.grey;
-    final backgroundColor = _selectedStatuses.isEmpty || isSelected 
-        ? color.withOpacity(0.2) 
-        : Colors.grey.withOpacity(0.1);
+    final displayColor =
+        _selectedStatuses.isEmpty || isSelected ? color : Colors.grey;
+    final backgroundColor = _selectedStatuses.isEmpty || isSelected
+        ? color.withAlpha((0.2 * 255).round())
+        : Colors.grey.withAlpha((0.1 * 255).round());
 
     return InkWell(
       onTap: onTap,
@@ -244,7 +262,8 @@ class _StatsCardState extends State<StatsCard> {
                         label,
                         style: TextStyle(
                           fontSize: 14,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
                           color: isLightMode ? Colors.black87 : Colors.white,
                         ),
                       ),

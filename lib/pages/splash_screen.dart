@@ -62,7 +62,7 @@ class _SplashScreenState extends State<SplashScreen>
                     riveIcon: RiveIcon.copy,
                     width: isHovered ? 90 : 60,
                     height: isHovered ? 90 : 60,
-                    color: Colors.brown.shade300,
+                    color: Colors.grey.shade500,
                     strokeWidth: 2,
                     loopAnimation: true,
                   ),
@@ -98,13 +98,20 @@ class _SplashScreenState extends State<SplashScreen>
               },
               icon: Icon(
                 Icons.arrow_forward,
-                color: colorScheme.onSurface,
+                color: colorScheme.brightness == Brightness.light
+                    ? Colors.white
+                    : Colors.black,
               ),
               label: CustomText2(
                 'Let\'s begin',
-                color: colorScheme.onSurface,
+                color: colorScheme.brightness == Brightness.light
+                    ? Colors.white
+                    : Colors.black,
               ),
               style: ElevatedButton.styleFrom(
+                backgroundColor: colorScheme.brightness == Brightness.light
+                    ? Colors.black
+                    : Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 40,
                   vertical: 16,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/agenda_model.dart';
 
-class AgendaSearchDelegate extends SearchDelegate<String> {
+class AgendaSearchDelegate extends SearchDelegate<AgendaModel> {
   final List<AgendaModel> agendas;
   final Function(String) onSearch;
 
@@ -14,10 +14,10 @@ class AgendaSearchDelegate extends SearchDelegate<String> {
   List<Widget> buildActions(BuildContext context) {
     return [
       IconButton(
-        icon: Icon(Icons.clear),
+        icon: const Icon(Icons.clear),
         onPressed: () {
           query = '';
-          onSearch(query);
+          showSuggestions(context);
         },
       ),
     ];
@@ -26,27 +26,43 @@ class AgendaSearchDelegate extends SearchDelegate<String> {
   @override
   Widget buildLeading(BuildContext context) {
     return IconButton(
-      icon: Icon(Icons.arrow_back),
+      icon: const Icon(Icons.arrow_back),
       onPressed: () {
-        close(context, '');
+        // Clear the search filter and return an empty agenda
+        onSearch('');
+        close(context, AgendaModel(
+          title: '',
+          description: '',
+          deadline: DateTime.now(),
+          category: '',
+          status: false,
+          selected: false,
+        ));
       },
     );
   }
 
   @override
   Widget buildResults(BuildContext context) {
-    onSearch(query);
-    return Container(); // Results will be shown in the main list
-  }
-
-  @override
-  Widget buildSuggestions(BuildContext context) {
-    if (query.isEmpty) return Container();
+    if (query.isEmpty) {
+      return Container();
+    }
 
     final suggestions = agendas.where((agenda) {
-      return agenda.title.toLowerCase().contains(query.toLowerCase()) ||
-          (agenda.category?.toLowerCase().contains(query.toLowerCase()) ?? false);
+      return agenda.title.toLowerCase().contains(query.toLowerCase());
     }).toList();
+
+    if (suggestions.isEmpty) {
+      return Center(
+        child: Text(
+          'No results found',
+          style: TextStyle(
+            fontSize: 18,
+            color: Colors.grey,
+          ),
+        ),
+      );
+    }
 
     return ListView.builder(
       itemCount: suggestions.length,
@@ -54,11 +70,54 @@ class AgendaSearchDelegate extends SearchDelegate<String> {
         final agenda = suggestions[index];
         return ListTile(
           title: Text(agenda.title),
-          subtitle: Text(agenda.category ?? 'Default'),
           onTap: () {
-            query = agenda.title;
             onSearch(query);
-            close(context, query);
+            close(context, agenda);
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    if (query.isEmpty) {
+      return Container();
+    }
+
+    final suggestions = agendas.where((agenda) {
+      return agenda.title.toLowerCase().contains(query.toLowerCase());
+    }).toList();
+
+    if (suggestions.isEmpty) {
+      return Center(
+        child: Text(
+          'No suggestions found',
+          style: TextStyle(
+            fontSize: 18,
+            color: Colors.grey,
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: suggestions.length,
+      itemBuilder: (context, index) {
+        final agenda = suggestions[index];
+        return ListTile(
+          title: Text(
+            agenda.title,
+            style: TextStyle(
+              fontWeight: agenda.title.toLowerCase() == query.toLowerCase()
+                  ? FontWeight.bold
+                  : FontWeight.normal,
+            ),
+          ),
+          onTap: () {
+            // Apply the search filter immediately instead of just updating the query
+            onSearch(agenda.title);
+            close(context, agenda);
           },
         );
       },
