@@ -1,6 +1,7 @@
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models/agenda_adapter.dart';
@@ -70,6 +71,12 @@ class _MyAppState extends State<MyApp> {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: _themeMode,
       builder: (context, currentThemeMode, child) {
+        SystemChrome.setSystemUIOverlayStyle(
+          currentThemeMode == ThemeMode.dark
+              ? SystemUiOverlayStyle.light
+              : SystemUiOverlayStyle.dark,
+        );
+
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'My Agenda',
@@ -91,6 +98,7 @@ class _MyAppState extends State<MyApp> {
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
               iconTheme: IconThemeData(color: Colors.black),
+              systemOverlayStyle: SystemUiOverlayStyle.dark,
             ),
             iconTheme: IconThemeData(color: Colors.black),
             cardColor: Colors.white,
@@ -114,6 +122,7 @@ class _MyAppState extends State<MyApp> {
               backgroundColor: Colors.black,
               foregroundColor: Colors.white,
               iconTheme: IconThemeData(color: Colors.white),
+              systemOverlayStyle: SystemUiOverlayStyle.light,
             ),
             iconTheme: IconThemeData(color: Colors.white),
             cardColor: Colors.black,

@@ -212,18 +212,26 @@ class AgendaTile extends StatelessWidget {
                           ],
                         ),
                         SizedBox(height: 8),
-                        CustomText(
-                          agenda.title,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: agenda.status
-                              ? isLightMode
-                                  ? Colors.grey
-                                  : Colors.grey[400]
-                              : isLightMode
+                        agenda.status 
+                          ? Text(
+                              agenda.title,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                decoration: TextDecoration.lineThrough,
+                                color: isLightMode
+                                    ? Colors.grey
+                                    : Colors.grey[400],
+                              ),
+                            )
+                          : CustomText(
+                              agenda.title,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: isLightMode
                                   ? Colors.black
                                   : Colors.white,
-                        ),
+                            ),
                       ],
                     ),
                   ),

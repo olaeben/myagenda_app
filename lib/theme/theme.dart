@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-// Light mode theme - Minimalist Light
 ThemeData lightmode = ThemeData(
   brightness: Brightness.light,
   colorScheme: ColorScheme.light(
@@ -44,6 +44,11 @@ ThemeData lightmode = ThemeData(
       color: Colors.black,
     ),
     iconTheme: IconThemeData(color: Colors.grey.shade800),
+    systemOverlayStyle: SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
+    ),
   ),
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
@@ -68,7 +73,6 @@ ThemeData lightmode = ThemeData(
   ),
 );
 
-// Dark mode theme - Minimalist Dark
 ThemeData darkmode = ThemeData(
   brightness: Brightness.dark,
   colorScheme: ColorScheme.dark(
@@ -85,16 +89,24 @@ ThemeData darkmode = ThemeData(
   useMaterial3: true,
   fontFamily: 'Poppins',
   textTheme: TextTheme(
-    displayLarge: TextStyle(fontWeight: FontWeight.w300, letterSpacing: -1.5, color: Colors.white),
-    displayMedium: TextStyle(fontWeight: FontWeight.w300, letterSpacing: -0.5, color: Colors.white),
+    displayLarge: TextStyle(
+        fontWeight: FontWeight.w300, letterSpacing: -1.5, color: Colors.white),
+    displayMedium: TextStyle(
+        fontWeight: FontWeight.w300, letterSpacing: -0.5, color: Colors.white),
     displaySmall: TextStyle(fontWeight: FontWeight.w400, color: Colors.white),
-    headlineMedium: TextStyle(fontWeight: FontWeight.w400, letterSpacing: 0.25, color: Colors.white),
+    headlineMedium: TextStyle(
+        fontWeight: FontWeight.w400, letterSpacing: 0.25, color: Colors.white),
     headlineSmall: TextStyle(fontWeight: FontWeight.w500, color: Colors.white),
-    titleLarge: TextStyle(fontWeight: FontWeight.w500, letterSpacing: 0.15, color: Colors.white),
-    titleMedium: TextStyle(fontWeight: FontWeight.w600, letterSpacing: 0.15, color: Colors.white),
-    titleSmall: TextStyle(fontWeight: FontWeight.w600, letterSpacing: 0.1, color: Colors.white),
-    bodyLarge: TextStyle(fontWeight: FontWeight.w400, letterSpacing: 0.5, color: Colors.white),
-    bodyMedium: TextStyle(fontWeight: FontWeight.w400, letterSpacing: 0.25, color: Colors.white),
+    titleLarge: TextStyle(
+        fontWeight: FontWeight.w500, letterSpacing: 0.15, color: Colors.white),
+    titleMedium: TextStyle(
+        fontWeight: FontWeight.w600, letterSpacing: 0.15, color: Colors.white),
+    titleSmall: TextStyle(
+        fontWeight: FontWeight.w600, letterSpacing: 0.1, color: Colors.white),
+    bodyLarge: TextStyle(
+        fontWeight: FontWeight.w400, letterSpacing: 0.5, color: Colors.white),
+    bodyMedium: TextStyle(
+        fontWeight: FontWeight.w400, letterSpacing: 0.25, color: Colors.white),
   ),
   cardColor: Color(0xFF1E1E1E),
   cardTheme: CardTheme(
@@ -112,6 +124,11 @@ ThemeData darkmode = ThemeData(
       color: Colors.white,
     ),
     iconTheme: IconThemeData(color: Colors.grey.shade300),
+    systemOverlayStyle: SystemUiOverlayStyle.light.copyWith(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+    ),
   ),
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
