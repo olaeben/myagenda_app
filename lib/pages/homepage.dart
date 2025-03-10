@@ -152,7 +152,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
 
-    // Clear search filter if no agenda was selected
     if (selectedAgenda == null) {
       setState(() {
         _searchFilter = null;
@@ -171,8 +170,6 @@ class _HomePageState extends State<HomePage> {
     if (!mounted) return;
     setState(() {
       _filteredAgendas = List.from(_agendas);
-
-      // Handle search filtering (either from search delegate or search controller)
       final searchQuery =
           _searchFilter?.toLowerCase() ?? _searchController.text.toLowerCase();
       if (searchQuery.isNotEmpty) {
@@ -205,11 +202,9 @@ class _HomePageState extends State<HomePage> {
         }).toList();
       }
 
-      // Apply status filter
       if (_selectedStatus != null || _selectedStatusFilters.isNotEmpty) {
         final now = DateTime.now();
         _filteredAgendas = _filteredAgendas.where((agenda) {
-          // If we have selected statuses from the stats card, use those
           if (_selectedStatusFilters.isNotEmpty) {
             if (_selectedStatusFilters.contains('completed') && agenda.status) {
               return true;
@@ -226,7 +221,6 @@ class _HomePageState extends State<HomePage> {
             }
             return false;
           } else {
-            // Otherwise use the dropdown selection
             switch (_selectedStatus?.toLowerCase()) {
               case 'completed':
                 return agenda.status;
@@ -253,7 +247,6 @@ class _HomePageState extends State<HomePage> {
   void _handleStatusFilterChange(List<String> selectedStatuses) {
     setState(() {
       _selectedStatusFilters = selectedStatuses;
-      // Clear dropdown filter if using stats card filters
       if (_selectedStatusFilters.isNotEmpty) {
         _selectedStatus = null;
       }
@@ -322,7 +315,6 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Handle bar
                     Center(
                       child: Container(
                         width: 40,
@@ -334,8 +326,6 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                     ),
-
-                    // Content
                     Padding(
                       padding: const EdgeInsets.all(20),
                       child: _showSuccess
@@ -400,7 +390,6 @@ class _HomePageState extends State<HomePage> {
                               ],
                             ),
                     ),
-
                     if (!_showSuccess)
                       Padding(
                         padding: const EdgeInsets.all(16),
@@ -1155,7 +1144,6 @@ class _HomePageState extends State<HomePage> {
             updatedAt: DateTime.now(),
           );
           _agendas.add(newAgenda);
-          // Schedule notifications for new agenda
           _notificationService.scheduleDeadlineNotifications(
             id: newAgenda.title.hashCode,
             title: newAgenda.title,

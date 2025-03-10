@@ -83,7 +83,6 @@ class AgendaModel extends HiveObject {
     );
   }
 
-  // Add a method to show agenda details
   void showDetails(BuildContext context) {
     showModalBottomSheet(
       context: context,

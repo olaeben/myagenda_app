@@ -28,16 +28,17 @@ class AgendaSearchDelegate extends SearchDelegate<AgendaModel> {
     return IconButton(
       icon: const Icon(Icons.arrow_back),
       onPressed: () {
-        // Clear the search filter and return an empty agenda
         onSearch('');
-        close(context, AgendaModel(
-          title: '',
-          description: '',
-          deadline: DateTime.now(),
-          category: '',
-          status: false,
-          selected: false,
-        ));
+        close(
+            context,
+            AgendaModel(
+              title: '',
+              description: '',
+              deadline: DateTime.now(),
+              category: '',
+              status: false,
+              selected: false,
+            ));
       },
     );
   }
@@ -115,7 +116,6 @@ class AgendaSearchDelegate extends SearchDelegate<AgendaModel> {
             ),
           ),
           onTap: () {
-            // Apply the search filter immediately instead of just updating the query
             onSearch(agenda.title);
             close(context, agenda);
           },

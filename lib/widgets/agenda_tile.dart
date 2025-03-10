@@ -223,8 +223,6 @@ class AgendaTile extends StatelessWidget {
                               : isLightMode
                                   ? Colors.black
                                   : Colors.white,
-                          // Note: TextDecoration is not directly supported in CustomText
-                          // We would need to extend CustomText to support this if needed
                         ),
                       ],
                     ),
