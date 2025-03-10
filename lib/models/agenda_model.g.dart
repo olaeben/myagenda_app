@@ -1,7 +1,12 @@
-import 'package:hive/hive.dart';
-import 'agenda_model.dart';
+// GENERATED CODE - DO NOT MODIFY BY HAND
 
-class AgendaAdapter extends TypeAdapter<AgendaModel> {
+part of 'agenda_model.dart';
+
+// **************************************************************************
+// TypeAdapterGenerator
+// **************************************************************************
+
+class AgendaModelAdapter extends TypeAdapter<AgendaModel> {
   @override
   final int typeId = 0;
 
@@ -9,26 +14,19 @@ class AgendaAdapter extends TypeAdapter<AgendaModel> {
   AgendaModel read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
-      for (var i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-
     return AgendaModel(
       id: fields[9] as String?,
       title: fields[0] as String,
       category: fields[1] as String?,
       status: fields[2] as bool,
-      deadline: fields[3] is String 
-          ? DateTime.parse(fields[3] as String) 
-          : fields[3] as DateTime,
-      selected: fields[4] as bool? ?? false,
+      deadline: fields[3] as DateTime,
+      selected: fields[4] as bool,
       description: fields[5] as String?,
-      createdAt: fields[6] is String 
-          ? DateTime.parse(fields[6] as String) 
-          : fields[6] as DateTime,
-      notificationFrequency: fields[7] as String? ?? 'Daily',
-      updatedAt: fields[8] is String 
-          ? DateTime.parse(fields[8] as String) 
-          : fields[8] as DateTime,
+      createdAt: fields[6] as DateTime?,
+      notificationFrequency: fields[7] as String,
+      updatedAt: fields[8] as DateTime?,
     );
   }
 
@@ -57,4 +55,14 @@ class AgendaAdapter extends TypeAdapter<AgendaModel> {
       ..writeByte(9)
       ..write(obj.id);
   }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AgendaModelAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
 }

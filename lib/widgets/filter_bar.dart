@@ -7,6 +7,7 @@ class FilterBar extends StatelessWidget {
   final String? selectedCategory;
   final DateTimeRange? selectedDateRange;
   final String? selectedStatus;
+  final String? searchFilter;
   final Function(String?) onCategorySelected;
   final Function(DateTimeRange?) onDateRangeSelected;
   final Function(String?) onStatusSelected;
@@ -19,6 +20,7 @@ class FilterBar extends StatelessWidget {
     this.selectedCategory,
     this.selectedDateRange,
     this.selectedStatus,
+    this.searchFilter,
     required this.onCategorySelected,
     required this.onDateRangeSelected,
     required this.onStatusSelected,
@@ -34,9 +36,7 @@ class FilterBar extends StatelessWidget {
         Row(
           children: [
             const Spacer(),
-            if (selectedCategory != null ||
-                selectedDateRange != null ||
-                selectedStatus != null)
+            if (selectedCategory != null || selectedDateRange != null || searchFilter != null || selectedStatus != null)
               TextButton(
                 onPressed: onClearFilters,
                 child: const Text(
@@ -47,7 +47,7 @@ class FilterBar extends StatelessWidget {
           ],
         ),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.filter_list,
@@ -55,23 +55,20 @@ class FilterBar extends StatelessWidget {
               color:
                   isLightMode ? Colors.brown.shade800 : Colors.brown.shade100,
             ),
-            const SizedBox(width: 60),
+            const SizedBox(width: 24),
             _buildFilterButton(
               context,
               'Category',
               () => _showCategoryFilter(context),
             ),
-            const SizedBox(width: 8),
-            _buildFilterButton(
-              context,
-              'Date',
-              () => _showDateFilter(context),
-            ),
-            const SizedBox(width: 8),
-            _buildFilterButton(
-              context,
-              'Status',
-              () => _showStatusFilter(context),
+            const SizedBox(width: 16),
+            GestureDetector(
+              onTap: () => _showDateFilter(context),
+              child: Icon(
+                Icons.calendar_today,
+                size: 24,
+                color: isLightMode ? Colors.black : Colors.white,
+              ),
             ),
           ],
         ),
@@ -85,6 +82,12 @@ class FilterBar extends StatelessWidget {
       height: 36, // Fixed height
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
+          backgroundColor: Theme.of(context).brightness == Brightness.light
+              ? Colors.black
+              : Colors.white,
+          foregroundColor: Theme.of(context).brightness == Brightness.light
+              ? Colors.white
+              : Colors.black,
           padding: const EdgeInsets.symmetric(horizontal: 16),
         ),
         onPressed: onPressed,
@@ -144,9 +147,15 @@ class FilterBar extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => StatusFilterDialog(
-        options: ['Completed', 'Pending', 'Expired'],
-        selectedOption: selectedStatus,
-        onOptionSelected: onStatusSelected,
+        options: const ['completed', 'pending', 'expired'],
+        selectedOption: selectedStatus?.toLowerCase(),
+        onOptionSelected: (status) {
+          if (status != null) {
+            onStatusSelected(status.toLowerCase());
+          } else {
+            onStatusSelected(null);
+          }
+        },
       ),
     );
   }

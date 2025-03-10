@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rive_animated_icon/rive_animated_icon.dart';
 import '../models/agenda_model.dart';
+import 'agenda_details_modal.dart';
 import 'custom_text.dart';
 
 class AgendaTile extends StatelessWidget {
@@ -49,154 +50,216 @@ class AgendaTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final isExpired = now.isAfter(agenda.deadline);
+    final isExpired = !agenda.status && now.isAfter(agenda.deadline);
+    final isLightMode = Theme.of(context).brightness == Brightness.light;
 
     return Dismissible(
-      key: ValueKey(agenda.title.hashCode),
+      key: Key(agenda.title),
       background: Container(
-        color: Colors.red,
+        margin: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.blue,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 20),
         alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
         child: RiveAnimatedIcon(
-            riveIcon: RiveIcon.bin,
-            width: 30,
-            height: 30,
-            color: Colors.white,
-            strokeWidth: 3,
-            loopAnimation: true,
-            onTap: () {},
-            onHover: (value) {}),
+          riveIcon: RiveIcon.edit,
+          width: 24,
+          height: 24,
+          color: Colors.white,
+          loopAnimation: true,
+        ),
       ),
       secondaryBackground: Container(
-        color: Colors.blue,
+        margin: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.red,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 20),
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
         child: RiveAnimatedIcon(
-            riveIcon: RiveIcon.edit,
-            width: 30,
-            height: 30,
-            color: Colors.white,
-            strokeWidth: 3,
-            loopAnimation: true,
-            onTap: () {},
-            onHover: (value) {}),
+          riveIcon: RiveIcon.bin,
+          width: 24,
+          height: 24,
+          color: Colors.white,
+          loopAnimation: true,
+        ),
       ),
-      onDismissed: (direction) {
-        if (direction == DismissDirection.startToEnd) {
-          onDelete?.call();
-        }
-      },
       confirmDismiss: (direction) async {
         if (direction == DismissDirection.startToEnd) {
-          final result = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const CustomText(
-                'Delete Agenda',
-                fontSize: 18,
-              ),
-              content: const CustomText2(
-                'Are you sure you want to delete this agenda?',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const CustomText2('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const CustomText2('Delete'),
-                ),
-              ],
-            ),
-          );
-          return result ?? false;
-        } else {
           onEdit?.call();
+          return false;
+        } else {
+          final result = await showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: CustomText('Delete Agenda'),
+                content:
+                    CustomText2('Are you sure you want to delete this agenda?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: CustomText2('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: CustomText2('Delete'),
+                  ),
+                ],
+              );
+            },
+          );
+          if (result == true) {
+            onDelete?.call();
+          }
           return false;
         }
       },
-      child: InkWell(
-        onTap: onTap,
-        onLongPress: onLongPress,
-        child: Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                if (showCheckbox)
-                  Checkbox(
-                    value: agenda.selected,
-                    onChanged: (value) => onTap?.call(),
-                  ),
-                _buildStatusIndicator(context),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        agenda.title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Poppins',
-                          decoration:
-                              agenda.status ? TextDecoration.lineThrough : null,
-                        ),
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        decoration: BoxDecoration(
+          color: isLightMode ? Colors.white : Colors.grey[850],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isLightMode ? Colors.grey[300]! : Colors.grey[800]!,
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: isLightMode
+                  ? Colors.black.withOpacity(0.1)
+                  : Colors.white.withOpacity(0.1),
+              blurRadius: 25,
+              spreadRadius: 3,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: onTap ??
+                () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => AgendaDetailsModal(
+                      agenda: agenda,
+                      onComplete: () {
+                        onStatusChanged?.call(true);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  );
+                },
+            onLongPress: onLongPress,
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  if (showCheckbox)
+                    Padding(
+                      padding: EdgeInsets.only(right: 12),
+                      child: Icon(
+                        agenda.selected
+                            ? Icons.check_circle
+                            : Icons.circle_outlined,
+                        color: Theme.of(context).primaryColor,
                       ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Text(
-                            '${agenda.deadline.day}/${agenda.deadline.month}/${agenda.deadline.year}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: isExpired && !agenda.status
-                                  ? Colors.red
-                                  : Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.color,
-                            ),
-                          ),
-                          if (agenda.category != null &&
-                              agenda.category!.isNotEmpty) ...[
-                            const SizedBox(width: 8),
+                    ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .secondaryContainer,
-                                borderRadius: BorderRadius.circular(12),
+                                color: isLightMode
+                                    ? (agenda.selected
+                                        ? Colors.black
+                                        : Colors.grey[100])
+                                    : (agenda.selected
+                                        ? Colors.white
+                                        : Colors.grey[800]),
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                              child: Text(
-                                agenda.category!,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSecondaryContainer,
-                                ),
+                              child: CustomText2(
+                                agenda.category ?? 'Default',
+                                fontSize: 12,
+                                color: isLightMode
+                                    ? (agenda.selected
+                                        ? Colors.white
+                                        : Colors.black)
+                                    : (agenda.selected
+                                        ? Colors.black
+                                        : Colors.white),
                               ),
+                            ),
+                            Spacer(),
+                            CustomText2(
+                              _getTimeLeft(),
+                              fontSize: 12,
+                              color: _getTimeColor(context),
                             ),
                           ],
-                        ],
-                      ),
-                    ],
+                        ),
+                        SizedBox(height: 8),
+                        CustomText(
+                          agenda.title,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: agenda.status
+                              ? isLightMode
+                                  ? Colors.grey
+                                  : Colors.grey[400]
+                              : isLightMode
+                                  ? Colors.black
+                                  : Colors.white,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                Checkbox(
-                  value: agenda.status,
-                  onChanged: onStatusChanged,
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  String _getTimeLeft() {
+    final now = DateTime.now();
+    final difference = agenda.deadline.difference(now);
+
+    if (agenda.status) return 'Completed';
+    if (difference.isNegative) return 'Expired';
+
+    if (difference.inDays > 0) {
+      return '${difference.inDays}d left';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h left';
+    } else {
+      return '${difference.inMinutes}m left';
+    }
+  }
+
+  Color _getTimeColor(BuildContext context) {
+    if (agenda.status) return Colors.green;
+
+    final now = DateTime.now();
+    final difference = agenda.deadline.difference(now);
+
+    if (difference.isNegative) return Colors.red;
+    if (difference.inHours < 24) return Colors.orange;
+    return Colors.orange;
   }
 }

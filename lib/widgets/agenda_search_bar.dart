@@ -37,7 +37,7 @@ class AgendaSearchBar extends StatelessWidget {
           fontFamily: 'Poppins',
         ),
         decoration: InputDecoration(
-          hintText: 'Search by agenda...',
+          hintText: 'Search tasks...',
           hintStyle: TextStyle(
             color: isLightMode ? Colors.grey[400] : Colors.grey[500],
             fontFamily: 'Poppins',
