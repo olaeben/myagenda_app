@@ -2,6 +2,19 @@ import 'package:flutter/material.dart';
 import '../models/agenda_model.dart';
 
 class AgendaSearchDelegate extends SearchDelegate<AgendaModel> {
+  @override
+  TextStyle? get searchFieldStyle => const TextStyle(color: Colors.grey);
+
+  @override
+  ThemeData appBarTheme(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return theme.copyWith(
+      inputDecorationTheme: InputDecorationTheme(
+        hintStyle: TextStyle(color: Colors.grey[400]),
+      ),
+    );
+  }
+
   final List<AgendaModel> agendas;
   final Function(String) onSearch;
 

@@ -47,7 +47,7 @@ class FilterBar extends StatelessWidget {
           ],
         ),
         Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.end,
           children: [
             Icon(
               Icons.filter_list,
@@ -70,6 +70,7 @@ class FilterBar extends StatelessWidget {
                 color: isLightMode ? Colors.black : Colors.white,
               ),
             ),
+            const SizedBox(width: 16),
           ],
         ),
       ],
