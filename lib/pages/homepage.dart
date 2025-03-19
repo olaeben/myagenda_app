@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
-import 'package:myagenda_app/widgets/custom_text.dart';
+import '../widgets/custom_text.dart';
 import '../models/agenda_model.dart';
 import '../services/notification_service.dart';
 import '../util/dialogue_box.dart';
@@ -1010,6 +1010,7 @@ class _HomePageState extends State<HomePage> {
   void _showAddAgendaDialog(BuildContext context, {AgendaModel? agenda}) async {
     bool _showSuccess = false;
     Map<String, dynamic>? _formResult;
+    bool _dialogActive = true; // Track if dialog is still active
 
     final result = await showModalBottomSheet(
       context: context,
@@ -1105,7 +1106,7 @@ class _HomePageState extends State<HomePage> {
                     _isSpeedDialOpen = false;
                   });
                 }
-                Future.delayed(Duration(seconds: 1), () {
+                Future.delayed(Duration(milliseconds: 700), () {
                   if (mounted) {
                     setState(() {
                       _showSuccess = true;
@@ -1113,7 +1114,7 @@ class _HomePageState extends State<HomePage> {
                   }
                 });
 
-                Future.delayed(Duration(seconds: 2), () {
+                Future.delayed(Duration(seconds: 1), () {
                   Navigator.pop(context, result);
                 });
 

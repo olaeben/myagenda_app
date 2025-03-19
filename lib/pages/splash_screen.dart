@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:myagenda_app/pages/homepage.dart';
+import '../pages/homepage.dart';
 import 'package:rive_animated_icon/rive_animated_icon.dart';
 
 import '../widgets/custom_text.dart';
@@ -71,7 +71,7 @@ class _SplashScreenState extends State<SplashScreen>
             ),
             const SizedBox(height: 32),
             CustomText(
-              'M Y  A G E N D A',
+              'A G E N D I F Y  N O W',
               fontSize: 28,
               fontWeight: FontWeight.bold,
               color: colorScheme.onSurface,

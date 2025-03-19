@@ -1,16 +1,16 @@
-# My Agenda
+# Agendifynow
 
-<img src="assets/logo/myagenda_logo.png" width="100" height="100" alt="My Agenda Logo">
+<img src="assets/logo/agendifynow_logo.png" width="100" height="100" alt="My Agenda Logo">
 
 A modern, minimalist task management app built with Flutter that helps you stay organized and never miss a deadline.
 
-## App Snapshots
+<!-- ## App Snapshots -->
 
-| Light Mode | Dark Mode |
+<!-- | Light Mode | Dark Mode |
 |------------|-----------|
 | <img src="assets/snapshots/light_mode.png" width="250" alt="Light Mode"> | <img src="assets/snapshots/dark_mode.png" width="250" alt="Dark Mode"> |
 | Task Actions | Notifications |
-| <img src="assets/snapshots/myagenda.gif" width="250" alt="Task Actions"> | <img src="assets/snapshots/notification.png" width="250" alt="Notifications"> |
+| <img src="assets/snapshots/myagenda.gif" width="250" alt="Task Actions"> | <img src="assets/snapshots/notification.png" width="250" alt="Notifications"> | -->
 
 ## Features
 

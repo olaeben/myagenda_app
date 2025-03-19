@@ -15,7 +15,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.example.myagenda_app"
+    namespace = "com.example.agendifynow_app"
     compileSdk 35
     ndkVersion = flutter.ndkVersion
 
@@ -30,7 +30,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.myagenda_app"
+        applicationId "com.oibitoye.agendifynow"
         minSdk 21
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
