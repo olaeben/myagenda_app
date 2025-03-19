@@ -47,13 +47,19 @@ class NotificationService {
     required int id,
     required String title,
     required DateTime deadline,
+    String frequency = 'Daily',
   }) async {
     try {
       final now = DateTime.now();
+      if (deadline.isBefore(now)) {
+        await cancelNotifications(id);
+        return;
+      }
+
       final location = tz.local;
 
-      // Schedule daily reminder if deadline is in the future
-      if (deadline.isAfter(now.add(const Duration(days: 1)))) {
+      if (frequency.toLowerCase() == 'daily' &&
+          deadline.isAfter(now.add(const Duration(days: 1)))) {
         final dailyReminder = DateTime(
           now.year,
           now.month,
@@ -70,6 +76,60 @@ class NotificationService {
           scheduledDate: tz.TZDateTime.from(dailyReminder, location),
           matchDateTimeComponents: DateTimeComponents.time,
         );
+      } else if (frequency.toLowerCase() == 'weekly') {
+        // Schedule weekly reminder
+        final weeklyReminder = DateTime(
+          now.year,
+          now.month,
+          now.day,
+          deadline.hour,
+          deadline.minute,
+        ).add(const Duration(days: 7));
+
+        await _scheduleNotification(
+          id: id + 2000,
+          title: 'Weekly Agenda Reminder',
+          body:
+              '$title is due on ${DateFormat('MMM d, HH:mm').format(deadline)}',
+          scheduledDate: tz.TZDateTime.from(weeklyReminder, location),
+          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+        );
+      } else if (frequency.toLowerCase() == 'bi-weekly') {
+        // Schedule bi-weekly reminder
+        final biWeeklyReminder = DateTime(
+          now.year,
+          now.month,
+          now.day,
+          deadline.hour,
+          deadline.minute,
+        ).add(const Duration(days: 14));
+
+        await _scheduleNotification(
+          id: id + 2000,
+          title: 'Bi-Weekly Agenda Reminder',
+          body:
+              '$title is due on ${DateFormat('MMM d, HH:mm').format(deadline)}',
+          scheduledDate: tz.TZDateTime.from(biWeeklyReminder, location),
+          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+        );
+      } else if (frequency.toLowerCase() == 'monthly') {
+        // Schedule monthly reminder
+        final monthlyReminder = DateTime(
+          now.year,
+          now.month + 1,
+          now.day,
+          deadline.hour,
+          deadline.minute,
+        );
+
+        await _scheduleNotification(
+          id: id + 2000,
+          title: 'Monthly Agenda Reminder',
+          body:
+              '$title is due on ${DateFormat('MMM d, HH:mm').format(deadline)}',
+          scheduledDate: tz.TZDateTime.from(monthlyReminder, location),
+          matchDateTimeComponents: DateTimeComponents.dayOfMonthAndTime,
+        );
       }
 
       // Schedule 15-minute reminder
@@ -83,7 +143,6 @@ class NotificationService {
         );
       }
 
-      // Immediate notification for close deadlines
       if (deadline.difference(now).inMinutes < 15 && deadline.isAfter(now)) {
         await _scheduleNotification(
           id: id,
@@ -150,8 +209,16 @@ class NotificationService {
   }
 
   Future<void> cancelNotifications(int id) async {
-    await _notifications.cancel(id); // Cancel 1-minute reminder
-    await _notifications.cancel(id + 1000); // Cancel deadline notification
-    await _notifications.cancel(id + 2000); // Cancel daily reminder
+    try {
+      await _notifications.cancel(id);
+      await _notifications.cancel(id + 1000);
+      await _notifications.cancel(id + 2000);
+
+      for (int i = 1; i <= 5; i++) {
+        await _notifications.cancel(id + (i * 1000));
+      }
+    } catch (e) {
+      debugPrint('Error cancelling notifications: $e');
+    }
   }
 }

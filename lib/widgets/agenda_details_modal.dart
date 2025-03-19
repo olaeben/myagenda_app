@@ -80,8 +80,11 @@ class _AgendaDetailsModalState extends State<AgendaDetailsModal> {
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
+            Container(
+              width: double.infinity,
+              alignment: Alignment.center,
               child: Container(
                 width: 40,
                 height: 4,
@@ -98,9 +101,10 @@ class _AgendaDetailsModalState extends State<AgendaDetailsModal> {
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       Container(
-                        padding: EdgeInsets.all(3),
+                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           border: Border.all(
                             color: isLightMode
@@ -108,38 +112,61 @@ class _AgendaDetailsModalState extends State<AgendaDetailsModal> {
                                 : Colors.grey[600]!,
                             width: 1.5,
                           ),
-                          borderRadius: BorderRadius.all(Radius.circular(8)),
+                          borderRadius: BorderRadius.all(Radius.circular(20)),
                         ),
+                        // Using intrinsic width instead of full width
+                        width: null, // This allows the container to size to its content
                         child: CustomText2(
                           widget.agenda.category ?? 'Default',
                           fontSize: 13,
                           color: isLightMode ? Colors.black54 : Colors.white70,
+                          textAlign: TextAlign.center,
                         ),
                       ),
                       SizedBox(height: 10),
-                      CustomText(
-                        widget.agenda.title,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: isLightMode ? Colors.black : Colors.white,
+                      Container(
+                        width: double.infinity,
+                        alignment: Alignment.centerLeft,
+                        child: CustomText(
+                          widget.agenda.title,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: isLightMode ? Colors.black : Colors.white,
+                          textAlign: TextAlign.left,
+                        ),
                       ),
                       SizedBox(height: 12),
-                      CustomText2(
-                        'Time Left',
-                        fontSize: 13,
-                        color: isLightMode ? Colors.black54 : Colors.white70,
+                      Container(
+                        width: double.infinity,
+                        alignment: Alignment.centerLeft,
+                        child: CustomText2(
+                          'Time Left',
+                          fontSize: 13,
+                          color: isLightMode ? Colors.black54 : Colors.white70,
+                          textAlign: TextAlign.left,
+                        ),
                       ),
-                      CustomText(
-                        _getTimeLeft(),
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: isLightMode ? Colors.black : Colors.white,
+                      Container(
+                        width: double.infinity,
+                        alignment: Alignment.centerLeft,
+                        child: CustomText(
+                          _getTimeLeft(),
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: isLightMode ? Colors.black : Colors.white,
+                          textAlign: TextAlign.left,
+                        ),
                       ),
-                      CustomText2(
-                        _formatDate(widget.agenda.deadline),
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: isLightMode ? Colors.black54 : Colors.white70,
+                      Container(
+                        width: double.infinity,
+                        alignment: Alignment.centerLeft,
+                        child: CustomText2(
+                          _formatDate(widget.agenda.deadline),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: isLightMode ? Colors.black54 : Colors.white70,
+                          textAlign: TextAlign.left,
+                        ),
                       ),
                       SizedBox(height: 20),
                       if (widget.agenda.description != null &&
@@ -147,12 +174,17 @@ class _AgendaDetailsModalState extends State<AgendaDetailsModal> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            CustomText2(
-                              'Description',
-                              fontWeight: FontWeight.normal,
-                              fontSize: 14,
-                              color:
-                                  isLightMode ? Colors.black54 : Colors.white70,
+                            Container(
+                              width: double.infinity,
+                              alignment: Alignment.centerLeft,
+                              child: CustomText2(
+                                'Description',
+                                fontWeight: FontWeight.normal,
+                                fontSize: 14,
+                                color:
+                                    isLightMode ? Colors.black54 : Colors.white70,
+                                textAlign: TextAlign.left,
+                              ),
                             ),
                             SizedBox(height: 4),
                             Container(
@@ -170,17 +202,27 @@ class _AgendaDetailsModalState extends State<AgendaDetailsModal> {
                             SizedBox(height: 20),
                           ],
                         ),
-                      CustomText2(
-                        'Created on',
-                        fontSize: 13,
-                        color: isLightMode ? Colors.black54 : Colors.white70,
+                      Container(
+                        width: double.infinity,
+                        alignment: Alignment.centerLeft,
+                        child: CustomText2(
+                          'Created on',
+                          fontSize: 13,
+                          color: isLightMode ? Colors.black54 : Colors.white70,
+                          textAlign: TextAlign.left,
+                        ),
                       ),
                       SizedBox(height: 6),
-                      CustomText2(
-                        _formatDate(widget.agenda.createdAt ?? DateTime.now()),
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: isLightMode ? Colors.black54 : Colors.white70,
+                      Container(
+                        width: double.infinity,
+                        alignment: Alignment.centerLeft,
+                        child: CustomText2(
+                          _formatDate(widget.agenda.createdAt ?? DateTime.now()),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: isLightMode ? Colors.black54 : Colors.white70,
+                          textAlign: TextAlign.left,
+                        ),
                       ),
                     ],
                   ),

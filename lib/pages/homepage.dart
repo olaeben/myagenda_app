@@ -1100,11 +1100,20 @@ class _HomePageState extends State<HomePage> {
               },
               onSave: (result) {
                 _formResult = result;
-                setState(() {
-                  _showSuccess = true;
+                if (mounted) {
+                  setState(() {
+                    _isSpeedDialOpen = false;
+                  });
+                }
+                Future.delayed(Duration(seconds: 1), () {
+                  if (mounted) {
+                    setState(() {
+                      _showSuccess = true;
+                    });
+                  }
                 });
 
-                Future.delayed(Duration(seconds: 1), () {
+                Future.delayed(Duration(seconds: 2), () {
                   Navigator.pop(context, result);
                 });
 
@@ -1126,8 +1135,10 @@ class _HomePageState extends State<HomePage> {
           agenda.deadline = result['deadline'];
           agenda.category = result['category'];
           agenda.description = result['description'];
+          agenda.notificationFrequency = result['notificationFrequency'];
           agenda.status = result['status'] ?? false;
           agenda.updatedAt = DateTime.now();
+          _isSpeedDialOpen = false;
           if (!agenda.status) {
             _notificationService.scheduleDeadlineNotifications(
               id: agenda.title.hashCode,
@@ -1142,10 +1153,12 @@ class _HomePageState extends State<HomePage> {
             deadline: result['deadline'],
             category: result['category'],
             description: result['description'],
+            notificationFrequency: result['notificationFrequency'],
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           );
           _agendas.add(newAgenda);
+          _isSpeedDialOpen = false;
           _notificationService.scheduleDeadlineNotifications(
             id: newAgenda.title.hashCode,
             title: newAgenda.title,
@@ -1177,7 +1190,9 @@ class _HomePageState extends State<HomePage> {
             agenda.deadline = result['deadline'];
             agenda.category = result['category'];
             agenda.description = result['description'];
+            agenda.notificationFrequency = result['notificationFrequency'];
             agenda.status = result['status'] ?? agenda.status;
+            agenda.updatedAt = DateTime.now();
             if (!agenda.status) {
               _notificationService.scheduleDeadlineNotifications(
                 id: agenda.title.hashCode,

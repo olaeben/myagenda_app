@@ -33,7 +33,7 @@ class _DialogueBoxState extends State<DialogueBox> {
   late TextEditingController _controller;
   late DateTime _deadline;
   String? _selectedCategory;
-  String _selectedNotificationFrequency = 'Daily';
+  late String _selectedNotificationFrequency;
   bool _isInternalController = false;
   String? _errorMessage;
   String _description = '';
@@ -61,19 +61,38 @@ class _DialogueBoxState extends State<DialogueBox> {
     _deadline =
         widget.initialDeadline ?? DateTime.now().add(Duration(hours: 1));
     _selectedCategory = widget.initialCategory ?? 'Default';
+
+    // Initialize notification frequency first
     _selectedNotificationFrequency =
         widget.initialNotificationFrequency ?? 'Daily';
+    if (!_notificationFrequencies.contains(_selectedNotificationFrequency)) {
+      _selectedNotificationFrequency = 'Daily';
+    }
 
-    // Initialize description controller with initial description
+    // Then handle other initializations
     _description = widget.initialDescription ?? '';
     _descriptionController = TextEditingController(text: _description);
-
-    // Initialize date and time from deadline
     selectedDate =
         widget.initialDeadline ?? DateTime.now().add(Duration(hours: 1));
     selectedTime = widget.initialDeadline != null
         ? TimeOfDay.fromDateTime(widget.initialDeadline!)
         : TimeOfDay.fromDateTime(DateTime.now().add(Duration(hours: 1)));
+  }
+
+  @override
+  void didUpdateWidget(DialogueBox oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialNotificationFrequency !=
+        oldWidget.initialNotificationFrequency) {
+      setState(() {
+        _selectedNotificationFrequency =
+            widget.initialNotificationFrequency ?? 'Daily';
+        if (!_notificationFrequencies
+            .contains(_selectedNotificationFrequency)) {
+          _selectedNotificationFrequency = 'Daily';
+        }
+      });
+    }
   }
 
   @override
@@ -153,7 +172,6 @@ class _DialogueBoxState extends State<DialogueBox> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        // Fix the TextField controller reference
                         TextField(
                           controller: _controller,
                           style: TextStyle(
@@ -300,7 +318,6 @@ class _DialogueBoxState extends State<DialogueBox> {
                         'notificationFrequency': _selectedNotificationFrequency,
                       };
 
-                      // If onSave is provided and returns false, don't pop
                       if (widget.onSave != null) {
                         bool shouldPop = widget.onSave!(result);
                         if (!shouldPop) return;
@@ -515,6 +532,7 @@ class _DialogueBoxState extends State<DialogueBox> {
 
   Widget _buildNotificationFrequencyField() {
     final isLightMode = Theme.of(context).brightness == Brightness.light;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
