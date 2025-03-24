@@ -117,16 +117,15 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _updateCategories() {
-    Set<String> updatedCategories = {'Default'};
-
+    Set<String> agendaCategories = {'Default'};
     for (var agenda in _agendas) {
       if (agenda.category != null && agenda.category!.isNotEmpty) {
-        updatedCategories.add(agenda.category!);
+        agendaCategories.add(agenda.category!);
       }
     }
 
     setState(() {
-      _categories = updatedCategories;
+      _categories.addAll(agendaCategories);
       _saveCategories();
     });
   }
