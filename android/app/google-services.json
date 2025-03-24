@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:28123662979:android:111155b21a703970b2e9b6",
+        "mobilesdk_app_id": "1:28123662979:android:64f185b4484fe353b2e9b6",
         "android_client_info": {
-          "package_name": "com.example.myagenda_app"
+          "package_name": "com.oibitoye.agendifynow"
         }
       },
       "oauth_client": [],

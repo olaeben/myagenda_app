@@ -15,7 +15,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.example.agendifynow_app"
+    namespace = "com.oibitoye.agendifynow"
     compileSdk 35
     ndkVersion = flutter.ndkVersion
 

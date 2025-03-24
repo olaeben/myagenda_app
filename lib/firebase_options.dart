@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAbasmsnMcFjqXuNARMSHbiMtbeuVUAQWc',
-    appId: '1:28123662979:android:111155b21a703970b2e9b6',
+    appId: '1:28123662979:android:64f185b4484fe353b2e9b6',
     messagingSenderId: '28123662979',
     projectId: 'myagenda-f0b90',
     storageBucket: 'myagenda-f0b90.firebasestorage.app',
@@ -65,5 +65,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'myagenda-f0b90.firebasestorage.app',
     iosBundleId: 'com.example.myagendaApp',
   );
-
 }
