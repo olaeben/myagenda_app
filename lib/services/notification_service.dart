@@ -76,8 +76,8 @@ class NotificationService {
           scheduledDate: tz.TZDateTime.from(dailyReminder, location),
           matchDateTimeComponents: DateTimeComponents.time,
         );
-      } else if (frequency.toLowerCase() == 'weekly') {
-        // Schedule weekly reminder
+      } else if (frequency.toLowerCase() == 'weekly' &&
+          deadline.isAfter(now.add(const Duration(days: 7)))) {
         final weeklyReminder = DateTime(
           now.year,
           now.month,
@@ -94,8 +94,8 @@ class NotificationService {
           scheduledDate: tz.TZDateTime.from(weeklyReminder, location),
           matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
         );
-      } else if (frequency.toLowerCase() == 'bi-weekly') {
-        // Schedule bi-weekly reminder
+      } else if (frequency.toLowerCase() == 'bi-weekly' &&
+          deadline.isAfter(now.add(const Duration(days: 14)))) {
         final biWeeklyReminder = DateTime(
           now.year,
           now.month,
@@ -112,8 +112,8 @@ class NotificationService {
           scheduledDate: tz.TZDateTime.from(biWeeklyReminder, location),
           matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
         );
-      } else if (frequency.toLowerCase() == 'monthly') {
-        // Schedule monthly reminder
+      } else if (frequency.toLowerCase() == 'monthly' &&
+          deadline.isAfter(now.add(const Duration(days: 30)))) {
         final monthlyReminder = DateTime(
           now.year,
           now.month + 1,

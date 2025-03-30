@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'custom_text.dart';
-
 class CategoryDialog extends StatefulWidget {
   final List<String> categories;
   final String? selectedCategory;
@@ -67,9 +65,10 @@ class _CategoryDialogState extends State<CategoryDialog> {
                   Text(
                     'Add New Category',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 24,
+                      fontFamily: 'Poppins',
                       fontWeight: FontWeight.bold,
-                      color: isLightMode ? Colors.black : Colors.white,
+                      color: isLightMode ? Colors.black45 : Colors.grey,
                     ),
                   ),
                   SizedBox(height: 16),
@@ -77,6 +76,9 @@ class _CategoryDialogState extends State<CategoryDialog> {
                     controller: _controller,
                     decoration: InputDecoration(
                       hintText: 'Enter category name',
+                      hintStyle: TextStyle(
+                        color: isLightMode ? Colors.black26 : Colors.grey[100],
+                      ),
                       filled: true,
                       fillColor:
                           isLightMode ? Colors.grey[100] : Colors.grey[800],
@@ -124,20 +126,25 @@ class _CategoryDialogState extends State<CategoryDialog> {
                         });
                         return;
                       }
-                      if (widget.categories.contains(category)) {
+                      if (widget.categories.any((existingCategory) =>
+                          existingCategory.toLowerCase() ==
+                          category.toLowerCase())) {
                         setState(() {
-                          _errorMessage = 'Category already exists';
+                          _errorMessage = 'Ooops... category already exists';
                         });
                         return;
                       }
                       Navigator.pop(context, category);
                     },
                     style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      backgroundColor: isLightMode ? Colors.black : Colors.white,
-                      foregroundColor: isLightMode ? Colors.white : Colors.black,
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      backgroundColor:
+                          isLightMode ? Colors.black : Colors.white,
+                      foregroundColor:
+                          isLightMode ? Colors.white : Colors.black,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                     ),
                     child: Text('Create'),

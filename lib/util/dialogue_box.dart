@@ -11,6 +11,7 @@ class DialogueBox extends StatefulWidget {
   final Function(String) onCategoryDeleted;
   final bool Function(Map<String, dynamic>)? onSave;
   final bool isEditing;
+  final Function()? onAddCategory;
 
   const DialogueBox({
     Key? key,
@@ -23,6 +24,7 @@ class DialogueBox extends StatefulWidget {
     required this.onCategoryDeleted,
     this.onSave,
     this.isEditing = false,
+    this.onAddCategory,
   }) : super(key: key);
 
   @override
@@ -40,6 +42,7 @@ class _DialogueBoxState extends State<DialogueBox> {
   DateTime? selectedDate;
   TimeOfDay? selectedTime;
   TextEditingController _descriptionController = TextEditingController();
+  String? _notificationFrequencyError;
 
   final List<String> _notificationFrequencies = [
     'Daily',
@@ -62,14 +65,12 @@ class _DialogueBoxState extends State<DialogueBox> {
         widget.initialDeadline ?? DateTime.now().add(Duration(hours: 1));
     _selectedCategory = widget.initialCategory ?? 'Default';
 
-    // Initialize notification frequency first
     _selectedNotificationFrequency =
         widget.initialNotificationFrequency ?? 'Daily';
     if (!_notificationFrequencies.contains(_selectedNotificationFrequency)) {
       _selectedNotificationFrequency = 'Daily';
     }
 
-    // Then handle other initializations
     _description = widget.initialDescription ?? '';
     _descriptionController = TextEditingController(text: _description);
     selectedDate =
@@ -375,6 +376,13 @@ class _DialogueBoxState extends State<DialogueBox> {
       });
       return false;
     }
+    _validateNotificationFrequency();
+    if (_notificationFrequencyError != null) {
+      setState(() {
+        _errorMessage = _notificationFrequencyError;
+      });
+      return false;
+    }
 
     setState(() {
       _errorMessage = null;
@@ -407,6 +415,7 @@ class _DialogueBoxState extends State<DialogueBox> {
             selectedTime = null;
           }
         }
+        _validateNotificationFrequency();
       });
     }
   }
@@ -436,6 +445,7 @@ class _DialogueBoxState extends State<DialogueBox> {
 
       setState(() {
         selectedTime = picked;
+        _validateNotificationFrequency();
       });
     }
   }
@@ -463,7 +473,10 @@ class _DialogueBoxState extends State<DialogueBox> {
               // Add button
               GestureDetector(
                 onTap: () async {
-                  Navigator.of(context).pop();
+                  if (widget.onAddCategory != null) {
+                    await widget.onAddCategory!();
+                    setState(() {});
+                  }
                 },
                 child: Container(
                   width: 50,
@@ -576,6 +589,7 @@ class _DialogueBoxState extends State<DialogueBox> {
                   onTap: () {
                     setState(() {
                       _selectedNotificationFrequency = frequency;
+                      _validateNotificationFrequency();
                     });
                   },
                   child: Container(
@@ -607,5 +621,47 @@ class _DialogueBoxState extends State<DialogueBox> {
         ),
       ],
     );
+  }
+
+  void _validateNotificationFrequency() {
+    _notificationFrequencyError = null;
+
+    if (selectedDate == null || selectedTime == null) {
+      return;
+    }
+
+    final now = DateTime.now();
+    final selectedDateTime = DateTime(
+      selectedDate!.year,
+      selectedDate!.month,
+      selectedDate!.day,
+      selectedTime!.hour,
+      selectedTime!.minute,
+    );
+
+    final difference = selectedDateTime.difference(now).inDays;
+
+    switch (_selectedNotificationFrequency.toLowerCase()) {
+      case 'weekly':
+        if (difference < 7) {
+          _notificationFrequencyError =
+              "Oops... date selected is less than a week.";
+        }
+        break;
+      case 'bi-weekly':
+        if (difference < 14) {
+          _notificationFrequencyError =
+              "Oops... date selected is less than two weeks.";
+        }
+        break;
+      case 'monthly':
+        if (difference < 30) {
+          _notificationFrequencyError =
+              "Oops... date selected is less than a month.";
+        }
+        break;
+      default:
+        break;
+    }
   }
 }

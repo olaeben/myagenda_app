@@ -168,7 +168,7 @@ class _CategorySelectorState extends State<CategorySelector> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'New Category',
+                  'Add New Category',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -182,6 +182,9 @@ class _CategorySelectorState extends State<CategorySelector> {
                 controller: _newCategoryController,
                 decoration: InputDecoration(
                   hintText: 'Enter category name',
+                  hintStyle: TextStyle(
+                    color: isLightMode ? Colors.black26 : Colors.grey[100],
+                  ),
                   filled: true,
                   fillColor: isLightMode ? Colors.grey[100] : Colors.grey[800],
                   border: UnderlineInputBorder(),

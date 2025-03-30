@@ -79,7 +79,7 @@ class _MyAppState extends State<MyApp> {
 
         return MaterialApp(
           debugShowCheckedModeBanner: false,
-          title: 'My Agenda',
+          title: 'AgendifyNow',
           theme: ThemeData(
             colorScheme: ColorScheme.light(
               primary: Colors.black,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
-import 'package:myagenda_app/widgets/custom_text.dart';
+import '../widgets/custom_text.dart';
 import '../models/agenda_model.dart';
 import '../services/notification_service.dart';
 import '../util/dialogue_box.dart';
@@ -12,6 +12,7 @@ import '../widgets/stats_card.dart';
 import '../widgets/filter_bar.dart';
 import 'dart:async';
 import 'package:rive_animated_icon/rive_animated_icon.dart';
+import '../widgets/category_dialog.dart';
 
 class HomePage extends StatefulWidget {
   final VoidCallback onToggleTheme;
@@ -117,16 +118,15 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _updateCategories() {
-    Set<String> updatedCategories = {'Default'};
-
+    Set<String> agendaCategories = {'Default'};
     for (var agenda in _agendas) {
       if (agenda.category != null && agenda.category!.isNotEmpty) {
-        updatedCategories.add(agenda.category!);
+        agendaCategories.add(agenda.category!);
       }
     }
 
     setState(() {
-      _categories = updatedCategories;
+      _categories.addAll(agendaCategories);
       _saveCategories();
     });
   }
@@ -291,6 +291,10 @@ class _HomePageState extends State<HomePage> {
     String? _errorMessage;
     bool _showSuccess = false;
 
+    setState(() {
+      _isSpeedDialOpen = false;
+    });
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -354,7 +358,7 @@ class _HomePageState extends State<HomePage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'New Category',
+                                  'Add New Category',
                                   style: TextStyle(
                                     fontSize: 24,
                                     fontFamily: 'Poppins',
@@ -369,6 +373,11 @@ class _HomePageState extends State<HomePage> {
                                   controller: controller,
                                   decoration: InputDecoration(
                                     hintText: 'Enter category name',
+                                    hintStyle: TextStyle(
+                                      color: isLightMode
+                                          ? Colors.black26
+                                          : Colors.grey[100],
+                                    ),
                                     errorText: _errorMessage,
                                     filled: true,
                                     fillColor: isLightMode
@@ -396,15 +405,23 @@ class _HomePageState extends State<HomePage> {
                         child: Center(
                           child: ElevatedButton(
                             onPressed: () {
-                              if (controller.text.trim().isEmpty) {
+                              final categoryName = controller.text.trim();
+                              if (categoryName.isEmpty) {
                                 setState(() {
                                   _errorMessage =
                                       "Ooops... name cannot be empty";
                                 });
+                              } else if (_categories.any((category) =>
+                                  category.toLowerCase() ==
+                                  categoryName.toLowerCase())) {
+                                setState(() {
+                                  _errorMessage =
+                                      "Ooops... category already exists";
+                                });
                               } else {
                                 setState(() {
                                   _showSuccess = true;
-                                  _categories.add(controller.text.trim());
+                                  _categories.add(categoryName);
                                   _saveCategories();
                                 });
 
@@ -1010,6 +1027,11 @@ class _HomePageState extends State<HomePage> {
   void _showAddAgendaDialog(BuildContext context, {AgendaModel? agenda}) async {
     bool _showSuccess = false;
     Map<String, dynamic>? _formResult;
+    bool _dialogActive = true;
+
+    setState(() {
+      _isSpeedDialOpen = false;
+    });
 
     final result = await showModalBottomSheet(
       context: context,
@@ -1098,14 +1120,30 @@ class _HomePageState extends State<HomePage> {
                   });
                 }
               },
-              onSave: (result) {
-                _formResult = result;
-                if (mounted) {
+              onAddCategory: () async {
+                final newCategory = await showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => CategoryDialog(
+                    categories: _categories.toList(),
+                    selectedCategory: null,
+                    onCategorySelected: (category) {},
+                  ),
+                );
+
+                if (newCategory != null && newCategory is String) {
                   setState(() {
-                    _isSpeedDialOpen = false;
+                    _categories.add(newCategory);
+                    _saveCategories();
                   });
                 }
-                Future.delayed(Duration(seconds: 1), () {
+
+                return false; // Don't close the agenda dialog
+              },
+              onSave: (result) {
+                _formResult = result;
+                Future.delayed(Duration(milliseconds: 700), () {
                   if (mounted) {
                     setState(() {
                       _showSuccess = true;
@@ -1113,7 +1151,7 @@ class _HomePageState extends State<HomePage> {
                   }
                 });
 
-                Future.delayed(Duration(seconds: 2), () {
+                Future.delayed(Duration(seconds: 1), () {
                   Navigator.pop(context, result);
                 });
 
@@ -1138,7 +1176,6 @@ class _HomePageState extends State<HomePage> {
           agenda.notificationFrequency = result['notificationFrequency'];
           agenda.status = result['status'] ?? false;
           agenda.updatedAt = DateTime.now();
-          _isSpeedDialOpen = false;
           if (!agenda.status) {
             _notificationService.scheduleDeadlineNotifications(
               id: agenda.title.hashCode,
@@ -1158,7 +1195,6 @@ class _HomePageState extends State<HomePage> {
             updatedAt: DateTime.now(),
           );
           _agendas.add(newAgenda);
-          _isSpeedDialOpen = false;
           _notificationService.scheduleDeadlineNotifications(
             id: newAgenda.title.hashCode,
             title: newAgenda.title,
