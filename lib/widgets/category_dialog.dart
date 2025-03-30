@@ -126,9 +126,11 @@ class _CategoryDialogState extends State<CategoryDialog> {
                         });
                         return;
                       }
-                      if (widget.categories.contains(category)) {
+                      if (widget.categories.any((existingCategory) =>
+                          existingCategory.toLowerCase() ==
+                          category.toLowerCase())) {
                         setState(() {
-                          _errorMessage = 'Category already exists';
+                          _errorMessage = 'Ooops... category already exists';
                         });
                         return;
                       }

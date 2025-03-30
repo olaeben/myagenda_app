@@ -405,15 +405,23 @@ class _HomePageState extends State<HomePage> {
                         child: Center(
                           child: ElevatedButton(
                             onPressed: () {
-                              if (controller.text.trim().isEmpty) {
+                              final categoryName = controller.text.trim();
+                              if (categoryName.isEmpty) {
                                 setState(() {
                                   _errorMessage =
                                       "Ooops... name cannot be empty";
                                 });
+                              } else if (_categories.any((category) =>
+                                  category.toLowerCase() ==
+                                  categoryName.toLowerCase())) {
+                                setState(() {
+                                  _errorMessage =
+                                      "Ooops... category already exists";
+                                });
                               } else {
                                 setState(() {
                                   _showSuccess = true;
-                                  _categories.add(controller.text.trim());
+                                  _categories.add(categoryName);
                                   _saveCategories();
                                 });
 
