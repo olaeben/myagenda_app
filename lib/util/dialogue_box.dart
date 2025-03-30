@@ -11,6 +11,7 @@ class DialogueBox extends StatefulWidget {
   final Function(String) onCategoryDeleted;
   final bool Function(Map<String, dynamic>)? onSave;
   final bool isEditing;
+  final Function()? onAddCategory;
 
   const DialogueBox({
     Key? key,
@@ -23,6 +24,7 @@ class DialogueBox extends StatefulWidget {
     required this.onCategoryDeleted,
     this.onSave,
     this.isEditing = false,
+    this.onAddCategory,
   }) : super(key: key);
 
   @override
@@ -463,7 +465,12 @@ class _DialogueBoxState extends State<DialogueBox> {
               // Add button
               GestureDetector(
                 onTap: () async {
-                  Navigator.of(context).pop();
+                  if (widget.onAddCategory != null) {
+                    await widget.onAddCategory!();
+                    setState(() {
+                      // Refresh the category list if needed
+                    });
+                  }
                 },
                 child: Container(
                   width: 50,

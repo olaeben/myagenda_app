@@ -12,6 +12,7 @@ import '../widgets/stats_card.dart';
 import '../widgets/filter_bar.dart';
 import 'dart:async';
 import 'package:rive_animated_icon/rive_animated_icon.dart';
+import '../widgets/category_dialog.dart';
 
 class HomePage extends StatefulWidget {
   final VoidCallback onToggleTheme;
@@ -290,6 +291,10 @@ class _HomePageState extends State<HomePage> {
     String? _errorMessage;
     bool _showSuccess = false;
 
+    setState(() {
+      _isSpeedDialOpen = false;
+    });
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -353,7 +358,7 @@ class _HomePageState extends State<HomePage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'New Category',
+                                  'Add New Category',
                                   style: TextStyle(
                                     fontSize: 24,
                                     fontFamily: 'Poppins',
@@ -368,6 +373,11 @@ class _HomePageState extends State<HomePage> {
                                   controller: controller,
                                   decoration: InputDecoration(
                                     hintText: 'Enter category name',
+                                    hintStyle: TextStyle(
+                                      color: isLightMode
+                                          ? Colors.black26
+                                          : Colors.grey[100],
+                                    ),
                                     errorText: _errorMessage,
                                     filled: true,
                                     fillColor: isLightMode
@@ -1009,7 +1019,11 @@ class _HomePageState extends State<HomePage> {
   void _showAddAgendaDialog(BuildContext context, {AgendaModel? agenda}) async {
     bool _showSuccess = false;
     Map<String, dynamic>? _formResult;
-    bool _dialogActive = true; // Track if dialog is still active
+    bool _dialogActive = true;
+
+    setState(() {
+      _isSpeedDialOpen = false;
+    });
 
     final result = await showModalBottomSheet(
       context: context,
@@ -1098,13 +1112,29 @@ class _HomePageState extends State<HomePage> {
                   });
                 }
               },
-              onSave: (result) {
-                _formResult = result;
-                if (mounted) {
+              onAddCategory: () async {
+                final newCategory = await showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => CategoryDialog(
+                    categories: _categories.toList(),
+                    selectedCategory: null,
+                    onCategorySelected: (category) {},
+                  ),
+                );
+
+                if (newCategory != null && newCategory is String) {
                   setState(() {
-                    _isSpeedDialOpen = false;
+                    _categories.add(newCategory);
+                    _saveCategories();
                   });
                 }
+
+                return false; // Don't close the agenda dialog
+              },
+              onSave: (result) {
+                _formResult = result;
                 Future.delayed(Duration(milliseconds: 700), () {
                   if (mounted) {
                     setState(() {
@@ -1138,7 +1168,6 @@ class _HomePageState extends State<HomePage> {
           agenda.notificationFrequency = result['notificationFrequency'];
           agenda.status = result['status'] ?? false;
           agenda.updatedAt = DateTime.now();
-          _isSpeedDialOpen = false;
           if (!agenda.status) {
             _notificationService.scheduleDeadlineNotifications(
               id: agenda.title.hashCode,
@@ -1158,7 +1187,6 @@ class _HomePageState extends State<HomePage> {
             updatedAt: DateTime.now(),
           );
           _agendas.add(newAgenda);
-          _isSpeedDialOpen = false;
           _notificationService.scheduleDeadlineNotifications(
             id: newAgenda.title.hashCode,
             title: newAgenda.title,
