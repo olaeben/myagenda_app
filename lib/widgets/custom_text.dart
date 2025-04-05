@@ -56,6 +56,8 @@ class CustomText2 extends StatelessWidget {
   final FontWeight? fontWeight;
   final Color? color;
   final TextAlign? textAlign;
+  final int? maxLines;
+  final TextOverflow? overflow;
 
   const CustomText2(
     this.text, {
@@ -64,6 +66,8 @@ class CustomText2 extends StatelessWidget {
     this.fontWeight = FontWeight.w300,
     this.color,
     this.textAlign,
+    this.maxLines,
+    this.overflow,
   });
 
   @override
@@ -80,6 +84,8 @@ class CustomText2 extends StatelessWidget {
                 : Colors.white),
       ),
       textAlign: textAlign,
+      maxLines: maxLines,
+      overflow: overflow,
     );
   }
 }

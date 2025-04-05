@@ -371,6 +371,7 @@ class _HomePageState extends State<HomePage> {
                                 SizedBox(height: 16),
                                 TextField(
                                   controller: controller,
+                                  maxLength: 14,
                                   decoration: InputDecoration(
                                     hintText: 'Enter category name',
                                     hintStyle: TextStyle(
@@ -519,16 +520,27 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _saveAgendasToHive() async {
-    final List<Map<String, dynamic>> agendaData =
-        _agendas.map((agenda) => agenda.toJson()).toList();
+    try {
+      final List<Map<String, dynamic>> agendaData =
+          _agendas.map((agenda) => agenda.toJson()).toList();
 
-    await _myAgenda.clear();
-    await _myAgenda.put('myAgenda', agendaData);
+      await _myAgenda.clear();
+      await _myAgenda.put('myAgenda', agendaData);
 
-    setState(() {
-      _updateFilteredAgendas();
-      _updateCategories();
-    });
+      if (mounted) {
+        setState(() {
+          _updateFilteredAgendas();
+          _updateCategories();
+        });
+      }
+    } catch (e) {
+      debugPrint('Error saving agendas: $e');
+      if (mounted) {
+        setState(() {
+          _updateFilteredAgendas();
+        });
+      }
+    }
   }
 
   void _saveAgendas() async {
@@ -843,6 +855,29 @@ class _HomePageState extends State<HomePage> {
                                             }
                                           });
                                         },
+                                        onCategoryEdited:
+                                            (oldCategory, newCategory) {
+                                          setState(() {
+                                            if (oldCategory != 'Default') {
+                                              _categories.remove(oldCategory);
+                                              _categories.add(newCategory);
+
+                                              for (var agenda in _agendas) {
+                                                if (agenda.category ==
+                                                    oldCategory) {
+                                                  agenda.category = newCategory;
+                                                }
+                                              }
+                                              if (_selectedCategory ==
+                                                  oldCategory) {
+                                                _selectedCategory = newCategory;
+                                              }
+
+                                              _saveAgendas();
+                                              _updateFilteredAgendas();
+                                            }
+                                          });
+                                        },
                                       ),
                                   ],
                                 ),
@@ -891,10 +926,17 @@ class _HomePageState extends State<HomePage> {
                                       child: AgendaTile(
                                         agenda: _filteredAgendas[index],
                                         onStatusChanged: (value) {
-                                          setState(() {
-                                            _filteredAgendas[index].status =
-                                                value ?? false;
-                                            _saveAgendas();
+                                          Future.microtask(() {
+                                            if (mounted) {
+                                              setState(() {
+                                                _filteredAgendas[index].status =
+                                                    value ?? false;
+                                                _filteredAgendas[index]
+                                                    .updatedAt = DateTime.now();
+                                                _saveAgendas();
+                                                _calculateStats();
+                                              });
+                                            }
                                           });
                                         },
                                         onLongPress: () => _toggleMultiSelect(
@@ -1139,7 +1181,7 @@ class _HomePageState extends State<HomePage> {
                   });
                 }
 
-                return false; // Don't close the agenda dialog
+                return false;
               },
               onSave: (result) {
                 _formResult = result;
@@ -1265,6 +1307,27 @@ class _HomePageState extends State<HomePage> {
     showDialog(
       context: context,
       builder: (context) => FilterDialog(
+        onCategoryEdited: (oldCategory, newCategory) {
+          setState(() {
+            if (oldCategory != 'Default') {
+              _categories.remove(oldCategory);
+              _categories.add(newCategory);
+
+              for (var agenda in _agendas) {
+                if (agenda.category == oldCategory) {
+                  agenda.category = newCategory;
+                }
+              }
+
+              if (_selectedCategory == oldCategory) {
+                _selectedCategory = newCategory;
+              }
+
+              _saveAgendas();
+              _updateFilteredAgendas();
+            }
+          });
+        },
         options: _categories.toList(),
         selectedOption: _selectedCategory,
         onOptionSelected: (category) {

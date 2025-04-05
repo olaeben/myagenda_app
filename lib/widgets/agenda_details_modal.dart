@@ -56,11 +56,14 @@ class _AgendaDetailsModalState extends State<AgendaDetailsModal> {
 
   void _handleComplete() {
     widget.onComplete();
-    Future.delayed(Duration(milliseconds: 300), () {
-      if (mounted) {
-        Navigator.pop(context);
-      }
-    });
+
+    if (mounted) {
+      Future.delayed(Duration(milliseconds: 300), () {
+        if (mounted && Navigator.canPop(context)) {
+          Navigator.of(context).pop();
+        }
+      });
+    }
   }
 
   @override
@@ -104,7 +107,8 @@ class _AgendaDetailsModalState extends State<AgendaDetailsModal> {
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           border: Border.all(
                             color: isLightMode
@@ -114,8 +118,7 @@ class _AgendaDetailsModalState extends State<AgendaDetailsModal> {
                           ),
                           borderRadius: BorderRadius.all(Radius.circular(20)),
                         ),
-                        // Using intrinsic width instead of full width
-                        width: null, // This allows the container to size to its content
+                        width: null,
                         child: CustomText2(
                           widget.agenda.category ?? 'Default',
                           fontSize: 13,
@@ -181,8 +184,9 @@ class _AgendaDetailsModalState extends State<AgendaDetailsModal> {
                                 'Description',
                                 fontWeight: FontWeight.normal,
                                 fontSize: 14,
-                                color:
-                                    isLightMode ? Colors.black54 : Colors.white70,
+                                color: isLightMode
+                                    ? Colors.black54
+                                    : Colors.white70,
                                 textAlign: TextAlign.left,
                               ),
                             ),
@@ -217,7 +221,8 @@ class _AgendaDetailsModalState extends State<AgendaDetailsModal> {
                         width: double.infinity,
                         alignment: Alignment.centerLeft,
                         child: CustomText2(
-                          _formatDate(widget.agenda.createdAt ?? DateTime.now()),
+                          _formatDate(
+                              widget.agenda.createdAt ?? DateTime.now()),
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                           color: isLightMode ? Colors.black54 : Colors.white70,

@@ -48,6 +48,7 @@ class NotificationService {
     required String title,
     required DateTime deadline,
     String frequency = 'Daily',
+    List<bool>? selectedDays,
   }) async {
     try {
       final now = DateTime.now();
@@ -72,64 +73,47 @@ class NotificationService {
           id: id + 2000,
           title: 'Daily Agenda Reminder',
           body:
-              '$title is due on ${DateFormat('MMM d, HH:mm').format(deadline)}',
+              'Your agenda "$title" is due on ${DateFormat('MMM d, HH:mm').format(deadline)}',
           scheduledDate: tz.TZDateTime.from(dailyReminder, location),
           matchDateTimeComponents: DateTimeComponents.time,
         );
-      } else if (frequency.toLowerCase() == 'weekly' &&
-          deadline.isAfter(now.add(const Duration(days: 7)))) {
-        final weeklyReminder = DateTime(
-          now.year,
-          now.month,
-          now.day,
-          deadline.hour,
-          deadline.minute,
-        ).add(const Duration(days: 7));
+      } else if (frequency.toLowerCase() == 'custom' &&
+          selectedDays != null &&
+          selectedDays.contains(true)) {
+        final List<int> selectedDayIndices = [];
+        for (int i = 0; i < selectedDays.length; i++) {
+          if (selectedDays[i]) selectedDayIndices.add(i);
+        }
 
-        await _scheduleNotification(
-          id: id + 2000,
-          title: 'Weekly Agenda Reminder',
-          body:
-              '$title is due on ${DateFormat('MMM d, HH:mm').format(deadline)}',
-          scheduledDate: tz.TZDateTime.from(weeklyReminder, location),
-          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
-        );
-      } else if (frequency.toLowerCase() == 'bi-weekly' &&
-          deadline.isAfter(now.add(const Duration(days: 14)))) {
-        final biWeeklyReminder = DateTime(
-          now.year,
-          now.month,
-          now.day,
-          deadline.hour,
-          deadline.minute,
-        ).add(const Duration(days: 14));
+        for (int i = 0; i < selectedDayIndices.length; i++) {
+          final dayIndex = selectedDayIndices[i];
+          final weekday = dayIndex + 1;
 
-        await _scheduleNotification(
-          id: id + 2000,
-          title: 'Bi-Weekly Agenda Reminder',
-          body:
-              '$title is due on ${DateFormat('MMM d, HH:mm').format(deadline)}',
-          scheduledDate: tz.TZDateTime.from(biWeeklyReminder, location),
-          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
-        );
-      } else if (frequency.toLowerCase() == 'monthly' &&
-          deadline.isAfter(now.add(const Duration(days: 30)))) {
-        final monthlyReminder = DateTime(
-          now.year,
-          now.month + 1,
-          now.day,
-          deadline.hour,
-          deadline.minute,
-        );
+          DateTime nextOccurrence = now;
+          while (nextOccurrence.weekday != weekday ||
+              nextOccurrence.isBefore(now)) {
+            nextOccurrence = nextOccurrence.add(const Duration(days: 1));
+          }
 
-        await _scheduleNotification(
-          id: id + 2000,
-          title: 'Monthly Agenda Reminder',
-          body:
-              '$title is due on ${DateFormat('MMM d, HH:mm').format(deadline)}',
-          scheduledDate: tz.TZDateTime.from(monthlyReminder, location),
-          matchDateTimeComponents: DateTimeComponents.dayOfMonthAndTime,
-        );
+          if (nextOccurrence.isBefore(deadline)) {
+            final customReminder = DateTime(
+              nextOccurrence.year,
+              nextOccurrence.month,
+              nextOccurrence.day,
+              deadline.hour,
+              deadline.minute,
+            );
+
+            await _scheduleNotification(
+              id: id + 2000 + i,
+              title: 'Custom Agenda Reminder',
+              body:
+                  'Your agenda "$title" is due on ${DateFormat('MMM d, HH:mm').format(deadline)}',
+              scheduledDate: tz.TZDateTime.from(customReminder, location),
+              matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+            );
+          }
+        }
       }
 
       // Schedule 15-minute reminder
@@ -138,7 +122,7 @@ class NotificationService {
         await _scheduleNotification(
           id: id,
           title: 'Upcoming Agenda',
-          body: '$title is due in 15 minutes',
+          body: 'Your agenda "$title" is due in 15 minutes',
           scheduledDate: tz.TZDateTime.from(reminderTime, location),
         );
       }
@@ -147,7 +131,8 @@ class NotificationService {
         await _scheduleNotification(
           id: id,
           title: 'Upcoming Agenda',
-          body: '$title is due soon at ${DateFormat('HH:mm').format(deadline)}',
+          body:
+              'Your agenda "$title" is due soon at ${DateFormat('HH:mm').format(deadline)}',
           scheduledDate:
               tz.TZDateTime.from(now.add(const Duration(seconds: 2)), location),
         );
@@ -158,7 +143,7 @@ class NotificationService {
         await _scheduleNotification(
           id: id + 1000,
           title: 'Agenda Due',
-          body: '$title deadline has arrived',
+          body: 'Your agenda "$title" deadline has arrived',
           scheduledDate: tz.TZDateTime.from(deadline, location),
         );
       }
@@ -190,8 +175,8 @@ class NotificationService {
           ),
           android: const AndroidNotificationDetails(
             'myagenda_notifications',
-            'My Agenda Notifications',
-            channelDescription: 'Notifications for My Agenda app',
+            'AgendifyNow Notifications',
+            channelDescription: 'Notifications for AgendifyNow app',
             importance: Importance.high,
             priority: Priority.high,
             icon: 'notification_icon',

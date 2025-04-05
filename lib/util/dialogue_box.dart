@@ -44,12 +44,18 @@ class _DialogueBoxState extends State<DialogueBox> {
   TextEditingController _descriptionController = TextEditingController();
   String? _notificationFrequencyError;
 
-  final List<String> _notificationFrequencies = [
-    'Daily',
-    'Weekly',
-    'Bi-Weekly',
-    'Monthly'
+  final List<String> _notificationFrequencies = ['Daily', 'Custom'];
+  final List<bool> _selectedDays = List.filled(7, false);
+  final List<String> _daysOfWeek = [
+    'Mon',
+    'Tue',
+    'Wed',
+    'Thu',
+    'Fri',
+    'Sat',
+    'Sun'
   ];
+  bool _showDayPicker = false;
 
   @override
   void initState() {
@@ -78,6 +84,13 @@ class _DialogueBoxState extends State<DialogueBox> {
     selectedTime = widget.initialDeadline != null
         ? TimeOfDay.fromDateTime(widget.initialDeadline!)
         : TimeOfDay.fromDateTime(DateTime.now().add(Duration(hours: 1)));
+
+    _controller.addListener(() {
+      setState(() {});
+    });
+    _descriptionController.addListener(() {
+      setState(() {});
+    });
   }
 
   @override
@@ -108,245 +121,355 @@ class _DialogueBoxState extends State<DialogueBox> {
   @override
   Widget build(BuildContext context) {
     final isLightMode = Theme.of(context).brightness == Brightness.light;
-    return Material(
-      type: MaterialType.transparency,
-      child: PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, result) async {
-          if (didPop) return;
-          Navigator.of(context).pop();
-        },
-        child: Container(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          decoration: BoxDecoration(
-            color: isLightMode ? Colors.white : Colors.grey[850],
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+    final statusBarHeight = MediaQuery.of(context).padding.top;
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      behavior: HitTestBehavior.translucent,
+      child: Material(
+        type: MaterialType.transparency,
+        child: PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) async {
+            if (didPop) return;
+            Navigator.of(context).pop();
+          },
+          child: SafeArea(
+            bottom: false,
+            maintainBottomViewPadding: true,
+            child: Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                top: statusBarHeight > 0 ? statusBarHeight + 8 : 8,
               ),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'New Agenda',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Poppins',
-                      color: isLightMode ? Colors.black45 : Colors.grey,
-                    ),
-                  ),
-                ),
+              decoration: BoxDecoration(
+                color: isLightMode ? Colors.white : Colors.grey[850],
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(20)),
               ),
-              Flexible(
+              child: Scrollbar(
+                thickness: 3.0,
+                radius: Radius.circular(3.0),
+                thumbVisibility: true,
+                interactive: true,
                 child: SingleChildScrollView(
+                  clipBehavior: Clip.antiAlias,
+                  physics: AlwaysScrollableScrollPhysics(),
                   child: Padding(
-                    padding: const EdgeInsets.all(20),
+                    padding: EdgeInsets.only(
+                      top: 8.0,
+                      bottom: 16.0,
+                    ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          'Title',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.normal,
-                            fontFamily: 'Poppins',
-                            color:
-                                isLightMode ? Colors.black87 : Colors.white70,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: _controller,
-                          style: TextStyle(
-                            color: isLightMode ? Colors.black : Colors.white,
-                            fontFamily: 'Poppins',
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Enter title',
-                            filled: true,
-                            fillColor: isLightMode
-                                ? Colors.grey[100]
-                                : Colors.grey[800],
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(20),
-                              borderSide: BorderSide.none,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 2),
-                          ),
-                          maxLines: 1,
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          'Additional Description (Optional)',
-                          style: TextStyle(
-                            fontWeight: FontWeight.normal,
-                            fontSize: 14,
-                            fontFamily: 'Poppins',
-                            color:
-                                isLightMode ? Colors.black87 : Colors.white70,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: _descriptionController,
-                          decoration: InputDecoration(
-                            hintText: 'Add description',
-                            filled: true,
-                            fillColor: isLightMode
-                                ? Colors.grey[100]
-                                : Colors.grey[800],
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(20),
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            margin: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(2),
                             ),
                           ),
-                          maxLines: 3,
-                          onChanged: (value) {
-                            _description = value;
-                          },
                         ),
-                        const SizedBox(height: 16),
-                        _buildCategoryField(),
-                        const SizedBox(height: 16),
-                        _buildNotificationFrequencyField(),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextButton.icon(
-                                onPressed: () => _selectDate(context),
-                                icon: Icon(
-                                  Icons.calendar_today,
-                                  color:
-                                      isLightMode ? Colors.black : Colors.white,
-                                ),
-                                label: Text(
-                                  selectedDate == null
-                                      ? 'Select Date'
-                                      : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
-                                ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 8),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Add New Agenda',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Poppins',
+                                color:
+                                    isLightMode ? Colors.black45 : Colors.grey,
                               ),
                             ),
-                            Expanded(
-                              child: TextButton.icon(
-                                onPressed: () => _selectTime(context),
-                                icon: const Icon(Icons.access_time),
-                                label: Text(
-                                  selectedTime == null
-                                      ? 'Select Time'
-                                      : selectedTime!.format(context),
-                                ),
+                          ),
+                        ),
+                        Flexible(
+                          child: SingleChildScrollView(
+                            child: Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Title',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.normal,
+                                      fontFamily: 'Poppins',
+                                      color: isLightMode
+                                          ? Colors.black87
+                                          : Colors.white70,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  TextField(
+                                    controller: _controller,
+                                    textInputAction: TextInputAction.done,
+                                    onSubmitted: (_) {
+                                      FocusScope.of(context).unfocus();
+                                    },
+                                    style: TextStyle(
+                                      color: isLightMode
+                                          ? Colors.black
+                                          : Colors.white,
+                                      fontFamily: 'Poppins',
+                                    ),
+                                    decoration: InputDecoration(
+                                      hintText: 'Enter title',
+                                      hintStyle: TextStyle(
+                                        color: isLightMode
+                                            ? Colors.black26
+                                            : Colors.grey[300],
+                                        fontSize: 14,
+                                      ),
+                                      filled: true,
+                                      fillColor: isLightMode
+                                          ? Colors.grey[100]
+                                          : Colors.grey[800],
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(20),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: 16, vertical: 2),
+                                      counterText:
+                                          '${_controller.text.length}/35',
+                                      counterStyle: TextStyle(
+                                        color: _controller.text.length > 35
+                                            ? Colors.red
+                                            : (isLightMode
+                                                ? Colors.black54
+                                                : Colors.grey[400]),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    maxLines: 1,
+                                    maxLength: 35,
+                                    buildCounter: (context,
+                                        {required currentLength,
+                                        required isFocused,
+                                        maxLength}) {
+                                      return Container();
+                                    },
+                                  ),
+                                  const SizedBox(height: 20),
+                                  Text(
+                                    'Additional Description (Optional)',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.normal,
+                                      fontSize: 14,
+                                      fontFamily: 'Poppins',
+                                      color: isLightMode
+                                          ? Colors.black87
+                                          : Colors.white70,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  TextField(
+                                    controller: _descriptionController,
+                                    keyboardType: TextInputType.multiline,
+                                    textInputAction: TextInputAction.newline,
+                                    onSubmitted: (_) {
+                                      FocusScope.of(context).unfocus();
+                                    },
+                                    decoration: InputDecoration(
+                                      hintText: 'Enter description',
+                                      hintStyle: TextStyle(
+                                        color: isLightMode
+                                            ? Colors.black26
+                                            : Colors.grey[300],
+                                        fontSize: 14,
+                                      ),
+                                      filled: true,
+                                      fillColor: isLightMode
+                                          ? Colors.grey[100]
+                                          : Colors.grey[800],
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      counterText:
+                                          '${_descriptionController.text.length}/574',
+                                      counterStyle: TextStyle(
+                                        color:
+                                            _descriptionController.text.length >
+                                                    574
+                                                ? Colors.red
+                                                : (isLightMode
+                                                    ? Colors.black54
+                                                    : Colors.grey[400]),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    maxLines: 3,
+                                    maxLength: 574,
+                                    buildCounter: (context,
+                                        {required currentLength,
+                                        required isFocused,
+                                        maxLength}) {
+                                      return Container();
+                                    },
+                                    onChanged: (value) {
+                                      _description = value;
+                                    },
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _buildCategoryField(),
+                                  const SizedBox(height: 16),
+                                  _buildNotificationFrequencyField(),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: TextButton.icon(
+                                          onPressed: () => _selectDate(context),
+                                          icon: Icon(
+                                            Icons.calendar_today,
+                                            color: isLightMode
+                                                ? Colors.black
+                                                : Colors.white,
+                                          ),
+                                          label: Text(
+                                            selectedDate == null
+                                                ? 'Select Date'
+                                                : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
+                                          ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: TextButton.icon(
+                                          onPressed: () => _selectTime(context),
+                                          icon: const Icon(Icons.access_time),
+                                          label: Text(
+                                            selectedTime == null
+                                                ? 'Select Time'
+                                                : selectedTime!.format(context),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
+                          ),
+                        ),
+                        if (_errorMessage != null)
+                          Container(
+                            margin: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withAlpha((0.1 * 255).round()),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.error_outline,
+                                    color: Colors.red, size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: CustomText(
+                                    _errorMessage!,
+                                    color: Colors.red,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Center(
+                            child: ElevatedButton(
+                              onPressed: () {
+                                if (_controller.text.trim().isEmpty) {
+                                  setState(() {
+                                    _errorMessage =
+                                        "Ooops... agenda title is required";
+                                  });
+                                  return;
+                                }
+                                if (_controller.text.length > 35) {
+                                  setState(() {
+                                    _errorMessage =
+                                        "Title cannot exceed 35 characters";
+                                  });
+                                  return;
+                                }
+                                if (_descriptionController.text.length > 574) {
+                                  setState(() {
+                                    _errorMessage =
+                                        "Description cannot exceed 574 characters";
+                                  });
+                                  return;
+                                }
+                                if (!_validateDateTime()) {
+                                  return;
+                                }
+
+                                final result = {
+                                  'title': _controller.text.trim(),
+                                  'description': _description,
+                                  'deadline': DateTime(
+                                    selectedDate!.year,
+                                    selectedDate!.month,
+                                    selectedDate!.day,
+                                    selectedTime!.hour,
+                                    selectedTime!.minute,
+                                  ),
+                                  'category': _selectedCategory ??
+                                      widget.initialCategory ??
+                                      'Default',
+                                  'notificationFrequency':
+                                      _selectedNotificationFrequency,
+                                };
+
+                                if (widget.onSave != null) {
+                                  bool shouldPop = widget.onSave!(result);
+                                  if (!shouldPop) return;
+                                }
+
+                                Navigator.of(context).pop(result);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    isLightMode ? Colors.black : Colors.white,
+                                foregroundColor:
+                                    isLightMode ? Colors.white : Colors.black,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 100, vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                              ),
+                              child:
+                                  Text(widget.isEditing ? 'Update' : 'Create',
+                                      style: const TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                      )),
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ),
               ),
-              if (_errorMessage != null)
-                Container(
-                  margin:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withAlpha((0.1 * 255).round()),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.error_outline,
-                          color: Colors.red, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: CustomText(
-                          _errorMessage!,
-                          color: Colors.red,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Center(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (_controller.text.trim().isEmpty) {
-                        setState(() {
-                          _errorMessage = "Ooops... agenda cannot be empty";
-                        });
-                        return;
-                      }
-                      if (!_validateDateTime()) {
-                        return;
-                      }
-
-                      final result = {
-                        'title': _controller.text.trim(),
-                        'description': _description,
-                        'deadline': DateTime(
-                          selectedDate!.year,
-                          selectedDate!.month,
-                          selectedDate!.day,
-                          selectedTime!.hour,
-                          selectedTime!.minute,
-                        ),
-                        'category': _selectedCategory ??
-                            widget.initialCategory ??
-                            'Default',
-                        'notificationFrequency': _selectedNotificationFrequency,
-                      };
-
-                      if (widget.onSave != null) {
-                        bool shouldPop = widget.onSave!(result);
-                        if (!shouldPop) return;
-                      }
-
-                      Navigator.of(context).pop(result);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          isLightMode ? Colors.black : Colors.white,
-                      foregroundColor:
-                          isLightMode ? Colors.white : Colors.black,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 100, vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                    ),
-                    child: Text(widget.isEditing ? 'Update' : 'Create',
-                        style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        )),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -357,7 +480,8 @@ class _DialogueBoxState extends State<DialogueBox> {
     final now = DateTime.now();
     if (selectedDate == null || selectedTime == null) {
       setState(() {
-        _errorMessage = 'Please select both date and time';
+        _errorMessage =
+            selectedDate == null ? 'Date is required' : 'Please select time';
       });
       return false;
     }
@@ -393,6 +517,7 @@ class _DialogueBoxState extends State<DialogueBox> {
   Future<void> _selectDate(BuildContext context) async {
     setState(() => _errorMessage = null);
     final now = DateTime.now();
+
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: selectedDate != null && selectedDate!.isAfter(now)
@@ -400,7 +525,21 @@ class _DialogueBoxState extends State<DialogueBox> {
           : now,
       firstDate: now,
       lastDate: DateTime(2101),
+      fieldLabelText: 'Enter Date',
+      errorFormatText: 'Date is required',
+      errorInvalidText: 'Date is required',
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            inputDecorationTheme: InputDecorationTheme(
+              errorStyle: TextStyle(color: Colors.red),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
+
     if (picked != null && picked != selectedDate) {
       setState(() {
         selectedDate = picked;
@@ -416,6 +555,10 @@ class _DialogueBoxState extends State<DialogueBox> {
           }
         }
         _validateNotificationFrequency();
+      });
+    } else if (picked == null && selectedDate != null) {
+      setState(() {
+        _errorMessage = "Date is required";
       });
     }
   }
@@ -470,7 +613,6 @@ class _DialogueBoxState extends State<DialogueBox> {
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
-              // Add button
               GestureDetector(
                 onTap: () async {
                   if (widget.onAddCategory != null) {
@@ -589,6 +731,10 @@ class _DialogueBoxState extends State<DialogueBox> {
                   onTap: () {
                     setState(() {
                       _selectedNotificationFrequency = frequency;
+                      if (frequency == 'Custom') {
+                        _showDayPicker = true;
+                        _showDayPickerModal(context);
+                      }
                       _validateNotificationFrequency();
                     });
                   },
@@ -619,12 +765,126 @@ class _DialogueBoxState extends State<DialogueBox> {
             ],
           ),
         ),
+        if (_selectedNotificationFrequency == 'Custom' &&
+            _selectedDays.contains(true))
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: Wrap(
+              spacing: 8.0,
+              children: List.generate(
+                _selectedDays.length,
+                (index) => _selectedDays[index]
+                    ? Container(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color:
+                              isLightMode ? Colors.grey[200] : Colors.grey[700],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          _daysOfWeek[index],
+                          style: TextStyle(
+                            color:
+                                isLightMode ? Colors.black87 : Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                      )
+                    : Container(),
+              ),
+            ),
+          ),
       ],
     );
   }
 
+  void _showDayPickerModal(BuildContext context) {
+    final isLightMode = Theme.of(context).brightness == Brightness.light;
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Container(
+          padding: EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Select Days for Notifications',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Poppins',
+                ),
+              ),
+              SizedBox(height: 20),
+              Wrap(
+                spacing: 8.0,
+                runSpacing: 8.0,
+                children: List.generate(
+                  7,
+                  (index) => GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedDays[index] = !_selectedDays[index];
+                      });
+                      this.setState(() {});
+                      _validateNotificationFrequency();
+                    },
+                    child: Container(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _selectedDays[index]
+                            ? (isLightMode ? Colors.black : Colors.white)
+                            : (isLightMode
+                                ? Colors.grey[200]
+                                : Colors.grey[700]),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        _daysOfWeek[index],
+                        style: TextStyle(
+                          color: _selectedDays[index]
+                              ? (isLightMode ? Colors.white : Colors.black)
+                              : (isLightMode ? Colors.black87 : Colors.white70),
+                          fontWeight: _selectedDays[index]
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isLightMode ? Colors.black : Colors.white,
+                  foregroundColor: isLightMode ? Colors.white : Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                child: Text('Done'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _validateNotificationFrequency() {
-    _notificationFrequencyError = null;
+    setState(() {
+      _notificationFrequencyError = null;
+    });
 
     if (selectedDate == null || selectedTime == null) {
       return;
@@ -639,29 +899,19 @@ class _DialogueBoxState extends State<DialogueBox> {
       selectedTime!.minute,
     );
 
-    final difference = selectedDateTime.difference(now).inDays;
+    if (selectedDateTime.isBefore(now)) {
+      setState(() {
+        _notificationFrequencyError = "Please select a future date and time.";
+      });
+      return;
+    }
 
-    switch (_selectedNotificationFrequency.toLowerCase()) {
-      case 'weekly':
-        if (difference < 7) {
-          _notificationFrequencyError =
-              "Oops... date selected is less than a week.";
-        }
-        break;
-      case 'bi-weekly':
-        if (difference < 14) {
-          _notificationFrequencyError =
-              "Oops... date selected is less than two weeks.";
-        }
-        break;
-      case 'monthly':
-        if (difference < 30) {
-          _notificationFrequencyError =
-              "Oops... date selected is less than a month.";
-        }
-        break;
-      default:
-        break;
+    if (_selectedNotificationFrequency == 'Custom' &&
+        !_selectedDays.contains(true)) {
+      setState(() {
+        _notificationFrequencyError =
+            "Please select at least one day for notifications.";
+      });
     }
   }
 }
