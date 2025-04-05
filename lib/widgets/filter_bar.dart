@@ -13,6 +13,7 @@ class FilterBar extends StatelessWidget {
   final Function(String?) onStatusSelected;
   final VoidCallback onClearFilters;
   final Function(String) onCategoryDeleted;
+  final Function(String, String) onCategoryEdited;
 
   const FilterBar({
     Key? key,
@@ -26,6 +27,7 @@ class FilterBar extends StatelessWidget {
     required this.onStatusSelected,
     required this.onClearFilters,
     required this.onCategoryDeleted,
+    required this.onCategoryEdited,
   }) : super(key: key);
 
   @override
@@ -36,7 +38,10 @@ class FilterBar extends StatelessWidget {
         Row(
           children: [
             const Spacer(),
-            if (selectedCategory != null || selectedDateRange != null || searchFilter != null || selectedStatus != null)
+            if (selectedCategory != null ||
+                selectedDateRange != null ||
+                searchFilter != null ||
+                selectedStatus != null)
               TextButton(
                 onPressed: onClearFilters,
                 child: const Text(
@@ -121,6 +126,7 @@ class FilterBar extends StatelessWidget {
         selectedOption: selectedCategory,
         onOptionSelected: onCategorySelected,
         onCategoryDeleted: onCategoryDeleted,
+        onCategoryEdited: onCategoryEdited,
       ),
     );
   }
@@ -137,6 +143,67 @@ class FilterBar extends StatelessWidget {
       firstDate: DateTime.now().subtract(Duration(days: 365)),
       lastDate: DateTime.now().add(Duration(days: 365)),
       initialDateRange: initialDateRange,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            materialTapTargetSize: MaterialTapTargetSize.padded,
+            colorScheme: ColorScheme(
+              brightness: Theme.of(context).brightness,
+              primary: Theme.of(context).brightness == Brightness.light
+                  ? Colors.black
+                  : Colors.grey[300]!,
+              onPrimary: Theme.of(context).brightness == Brightness.light
+                  ? Colors.white
+                  : Colors.black,
+              secondary: Theme.of(context).brightness == Brightness.light
+                  ? Colors.grey[300]!
+                  : Colors.grey[700]!,
+              onSecondary: Theme.of(context).brightness == Brightness.light
+                  ? Colors.black
+                  : Colors.white,
+              error: Colors.red,
+              onError: Colors.white,
+              background: Theme.of(context).brightness == Brightness.light
+                  ? Colors.white
+                  : Colors.grey[900]!,
+              onBackground: Theme.of(context).brightness == Brightness.light
+                  ? Colors.black
+                  : Colors.white,
+              surface: Theme.of(context).brightness == Brightness.light
+                  ? Colors.white
+                  : Colors.grey[850]!,
+              onSurface: Theme.of(context).brightness == Brightness.light
+                  ? Colors.black
+                  : Colors.white,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).brightness == Brightness.light
+                    ? Colors.black
+                    : Colors.white,
+              ),
+            ),
+            datePickerTheme: DatePickerThemeData(
+              dayStyle: TextStyle(
+                color: Theme.of(context).brightness == Brightness.light
+                    ? Colors.black
+                    : Colors.white,
+              ),
+              weekdayStyle: TextStyle(
+                color: Theme.of(context).brightness == Brightness.light
+                    ? Colors.black87
+                    : Colors.white70,
+              ),
+            ),
+          ),
+          child: MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(1.1),
+            ),
+            child: child!,
+          ),
+        );
+      },
     );
 
     if (pickedRange != null) {

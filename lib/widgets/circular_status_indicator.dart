@@ -25,14 +25,22 @@ class _CircularStatusIndicatorState extends State<CircularStatusIndicator> {
   int? explodeIndex;
 
   @override
+  void initState() {
+    super.initState();
+    selectedData = null;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isLightMode = Theme.of(context).brightness == Brightness.light;
-    final chartData = widget.values.entries
-        .map((entry) => ChartData(
-            entry.key,
-            double.parse(entry.value.toStringAsFixed(1)),
-            _getStatusColor(entry.key)))
-        .toList();
+    final chartData = widget.values.isEmpty
+        ? [ChartData('Empty', 0.0, Colors.grey)]
+        : widget.values.entries
+            .map((entry) => ChartData(
+                entry.key,
+                double.parse(entry.value.toStringAsFixed(1)),
+                _getStatusColor(entry.key)))
+            .toList();
 
     return SizedBox(
       width: widget.size,
@@ -54,7 +62,7 @@ class _CircularStatusIndicatorState extends State<CircularStatusIndicator> {
                             : Colors.brown.shade100,
                       ),
                     )
-                  : const SizedBox.shrink(),
+                  : Container(),
             ),
           ),
         ],
@@ -73,11 +81,18 @@ class _CircularStatusIndicatorState extends State<CircularStatusIndicator> {
             onPointTap: (ChartPointDetails details) {
               setState(() {
                 if (explodeIndex == details.pointIndex) {
+                  // When clicking the same segment again, reset to 0.0%
                   selectedData = null;
                   explodeIndex = null;
                 } else {
-                  selectedData = chartData[details.pointIndex!];
-                  explodeIndex = details.pointIndex;
+                  if (chartData.length == 1 && chartData[0].status == 'Empty') {
+                    selectedData = ChartData('Empty', 0.0, Colors.grey);
+                    explodeIndex = 0;
+                  } else if (details.pointIndex != null &&
+                      details.pointIndex! < chartData.length) {
+                    selectedData = chartData[details.pointIndex!];
+                    explodeIndex = details.pointIndex;
+                  }
                 }
               });
             },

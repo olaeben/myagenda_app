@@ -19,6 +19,15 @@ class CategoryDialog extends StatefulWidget {
 class _CategoryDialogState extends State<CategoryDialog> {
   final TextEditingController _controller = TextEditingController();
   String? _errorMessage;
+  final int _maxCategoryLength = 14;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(() {
+      setState(() {});
+    });
+  }
 
   @override
   void dispose() {
@@ -88,7 +97,22 @@ class _CategoryDialogState extends State<CategoryDialog> {
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 14),
+                      counterText:
+                          '${_controller.text.length}/$_maxCategoryLength',
+                      counterStyle: TextStyle(
+                        color: _controller.text.length > _maxCategoryLength
+                            ? Colors.red
+                            : (isLightMode ? Colors.black54 : Colors.grey[400]),
+                        fontSize: 12,
+                      ),
                     ),
+                    maxLength: _maxCategoryLength,
+                    buildCounter: (context,
+                        {required currentLength,
+                        required isFocused,
+                        maxLength}) {
+                      return Container();
+                    },
                   ),
                   if (_errorMessage != null)
                     Padding(
@@ -123,6 +147,13 @@ class _CategoryDialogState extends State<CategoryDialog> {
                       if (category.isEmpty) {
                         setState(() {
                           _errorMessage = 'Category name cannot be empty';
+                        });
+                        return;
+                      }
+                      if (category.length > _maxCategoryLength) {
+                        setState(() {
+                          _errorMessage =
+                              'Category name cannot exceed $_maxCategoryLength characters';
                         });
                         return;
                       }

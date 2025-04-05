@@ -178,32 +178,36 @@ class AgendaTile extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: isLightMode
-                                    ? (agenda.selected
-                                        ? Colors.black
-                                        : Colors.grey[100])
-                                    : (agenda.selected
-                                        ? Colors.white
-                                        : Colors.grey[800]),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: CustomText2(
-                                agenda.category ?? 'Default',
-                                fontSize: 12,
-                                color: isLightMode
-                                    ? (agenda.selected
-                                        ? Colors.white
-                                        : Colors.black)
-                                    : (agenda.selected
-                                        ? Colors.black
-                                        : Colors.white),
+                            Flexible(
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: isLightMode
+                                      ? (agenda.selected
+                                          ? Colors.black
+                                          : Colors.grey[100])
+                                      : (agenda.selected
+                                          ? Colors.white
+                                          : Colors.grey[800]),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: CustomText2(
+                                  agenda.category ?? 'Default',
+                                  fontSize: 12,
+                                  color: isLightMode
+                                      ? (agenda.selected
+                                          ? Colors.white
+                                          : Colors.black)
+                                      : (agenda.selected
+                                          ? Colors.black
+                                          : Colors.white),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             ),
-                            Spacer(),
+                            SizedBox(width: 8),
                             CustomText2(
                               _getTimeLeft(),
                               fontSize: 12,
@@ -212,26 +216,25 @@ class AgendaTile extends StatelessWidget {
                           ],
                         ),
                         SizedBox(height: 8),
-                        agenda.status 
-                          ? Text(
-                              agenda.title,
-                              style: TextStyle(
+                        agenda.status
+                            ? Text(
+                                agenda.title,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  decoration: TextDecoration.lineThrough,
+                                  color: isLightMode
+                                      ? Colors.grey
+                                      : Colors.grey[400],
+                                ),
+                              )
+                            : CustomText(
+                                agenda.title,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                decoration: TextDecoration.lineThrough,
-                                color: isLightMode
-                                    ? Colors.grey
-                                    : Colors.grey[400],
+                                color:
+                                    isLightMode ? Colors.black : Colors.white,
                               ),
-                            )
-                          : CustomText(
-                              agenda.title,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: isLightMode
-                                  ? Colors.black
-                                  : Colors.white,
-                            ),
                       ],
                     ),
                   ),
