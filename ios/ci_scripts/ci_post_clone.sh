@@ -1,32 +1,72 @@
-    #!/bin/sh
+#!/bin/sh
 
-    # Exit immediately if a command exits with a non-zero status.
-    set -e
+# Exit immediately if a command exits with a non-zero status.
+set -e
+# Print each command before executing it (for debugging)
+set -x
 
-    # --- Flutter Environment Setup ---
-    # This assumes Flutter is available in the Xcode Cloud environment.
-    # Adjust path if necessary, though default environments usually have it.
-    echo "Setting up Flutter..."
-    # Install Flutter dependencies
-    flutter pub get
+echo "--- Starting ci_post_clone.sh (running from ios/ci_scripts) ---"
+echo "Current directory: $(pwd)" # Should be /Volumes/workspace/repository/ios/ci_scripts
 
-    # --- Generate Xcode Config Files ---
-    echo "Generating Xcode config files..."
-    # Run flutter build ios to generate Generated.xcconfig and other necessary files
-    # Using --no-codesign as Xcode Cloud will handle signing later
-    flutter build ios --release --no-codesign
+# --- Find Flutter ---
+# Xcode Cloud environment variable $FLUTTER_ROOT is often set.
+# Fallback to a common location if variable isn't set.
+FLUTTER_PATH=""
+if [ -n "$FLUTTER_ROOT" ]; then
+  FLUTTER_PATH="$FLUTTER_ROOT/bin"
+  echo "Found Flutter root via \$FLUTTER_ROOT: $FLUTTER_ROOT"
+elif [ -d "/Users/local/flutter" ]; then
+  FLUTTER_PATH="/Users/local/flutter/bin"
+  echo "Found Flutter root at default location: /Users/local/flutter"
+else
+  echo "ERROR: Could not find Flutter installation."
+  # Try searching common paths (might be slow)
+  FLUTTER_CMD_PATH=$(which flutter)
+  if [ -n "$FLUTTER_CMD_PATH" ]; then
+      FLUTTER_PATH=$(dirname "$FLUTTER_CMD_PATH")
+      echo "Found Flutter using 'which' command: $FLUTTER_PATH"
+  else
+      echo "Flutter command 'flutter' not found in PATH or common locations."
+      exit 1 # Exit if Flutter cannot be found
+  fi
+fi
 
-    # --- CocoaPods Setup ---
-    echo "Setting up CocoaPods..."
-    # Navigate to the ios directory
-    cd ios
+# Add Flutter to the script's PATH
+export PATH="$FLUTTER_PATH:$PATH"
+echo "Updated PATH: $PATH"
+echo "Verifying Flutter command: $(which flutter)"
+echo "Flutter version: $(flutter --version)"
 
-    # Install CocoaPods dependencies
-    # Using repo-update might be needed if Pods are outdated, but can be slower.
-    # Try without it first.
-    # pod install --repo-update
-    pod install
+# --- Flutter Project Setup ---
+# Go UP one level to the 'ios' directory first
+cd .. # Now in /Volumes/workspace/repository/ios
+echo "Current directory: $(pwd)"
 
-    echo "Post-clone script finished successfully."
+# Go UP another level to the project root directory
+cd .. # Now in /Volumes/workspace/repository
+echo "Current directory: $(pwd)"
 
-    exit 0
+echo "Running flutter pub get in project root..."
+flutter pub get
+
+echo "Running flutter build ios in project root..."
+flutter build ios --release --no-codesign
+
+echo "Checking for Generated.xcconfig..."
+ls -l ios/Flutter/
+
+# --- CocoaPods Setup ---
+echo "Navigating back to ios directory..."
+cd ios # Now in /Volumes/workspace/repository/ios
+echo "Current directory: $(pwd)"
+
+echo "Pod version: $(pod --version)"
+echo "Running pod install..."
+pod install
+
+echo "Checking for Pods directory and xcfilelists..."
+ls -l Pods/Target\ Support\ Files/Pods-Runner/
+
+echo "--- ci_post_clone.sh finished successfully ---"
+set +x # Turn off command printing
+exit 0
