@@ -11,13 +11,13 @@ FLUTTER_PATH=""
 
 # Check common Xcode Cloud locations first
 COMMON_LOCATIONS=(
-  "$FLUTTER_ROOT/bin"                  # From environment variable
+  "$CI_WORKSPACE/flutter/bin"          # CI workspace directory (primary)
   "/Users/local/flutter/bin"            # Common Xcode Cloud location
+  "$FLUTTER_ROOT/bin"                  # From environment variable
+  "/Volumes/workspace/flutter/bin"      # Xcode Cloud specific path
   "$HOME/flutter/bin"                  # User's home directory
   "/Applications/flutter/bin"           # Applications directory
   "/usr/local/flutter/bin"              # System-wide installation
-  "$CI_WORKSPACE/flutter/bin"          # CI workspace directory
-  "/Volumes/workspace/flutter/bin"      # Xcode Cloud specific path
 )
 
 
@@ -45,8 +45,28 @@ if [ -z "$FLUTTER_PATH" ]; then
     FLUTTER_PATH=$(dirname "$FLUTTER_CMD_PATH")
     echo "Found Flutter in PATH: $FLUTTER_PATH"
   else
-    echo "WARNING: Flutter not found. Will attempt to continue with system Flutter."
-    FLUTTER_PATH="flutter" 
+    echo "Flutter not found. Installing Flutter SDK..."
+    
+    # Create a temporary directory for Flutter
+    TEMP_DIR="$CI_WORKSPACE/flutter_sdk"
+    mkdir -p "$TEMP_DIR"
+    cd "$TEMP_DIR"
+    
+    # Download Flutter SDK
+    echo "Downloading Flutter SDK..."
+    curl -L -o flutter.zip https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_3.13.9-stable.zip
+    
+    # Extract Flutter SDK
+    echo "Extracting Flutter SDK..."
+    unzip -q flutter.zip
+    
+    # Set Flutter path
+    FLUTTER_PATH="$TEMP_DIR/flutter/bin"
+    
+    # Clean up zip file
+    rm flutter.zip
+    
+    echo "Flutter SDK installed at: $FLUTTER_PATH"
   fi
 fi
 
@@ -57,38 +77,45 @@ echo "Updated PATH: $PATH"
 # Verify Flutter is available
 if command -v flutter >/dev/null 2>&1; then
   echo "Verifying Flutter command: $(which flutter)"
-  echo "Flutter version: $(flutter --version)"
+  flutter --version
+  flutter precache
 else
   echo "ERROR: Flutter command still not available after PATH update."
   echo "Attempting to download and install Flutter..."
   
-  # Create a temporary directory for Flutter
-  TEMP_DIR="$(pwd)/flutter_temp"
-  mkdir -p "$TEMP_DIR"
-  cd "$TEMP_DIR"
-  
-  # Download Flutter SDK
-  echo "Downloading Flutter SDK..."
-  curl -O https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_3.13.9-stable.zip
-  
-  # Extract Flutter SDK
-  echo "Extracting Flutter SDK..."
-  unzip -q flutter_macos_3.13.9-stable.zip
+  # Create a temporary directory for Flutter if it doesn't exist
+  TEMP_DIR="$CI_WORKSPACE/flutter_sdk"
+  if [ ! -d "$TEMP_DIR/flutter" ]; then
+    mkdir -p "$TEMP_DIR"
+    cd "$TEMP_DIR"
+    
+    # Download Flutter SDK
+    echo "Downloading Flutter SDK..."
+    curl -L -o flutter.zip https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_3.13.9-stable.zip
+    
+    # Extract Flutter SDK
+    echo "Extracting Flutter SDK..."
+    unzip -q flutter.zip
+    rm flutter.zip
+  fi
   
   # Add Flutter to PATH
   export PATH="$TEMP_DIR/flutter/bin:$PATH"
   
-  # Verify Flutter installation
+  # Verify Flutter installation and precache
   if command -v flutter >/dev/null 2>&1; then
     echo "Flutter successfully installed: $(which flutter)"
-    echo "Flutter version: $(flutter --version)"
+    flutter --version
+    flutter precache
   else
     echo "ERROR: Failed to install Flutter. Exiting."
     exit 1
   fi
   
-  # Return to original directory
-  cd -
+  # Return to original directory if we changed it
+  if [ "$(pwd)" = "$TEMP_DIR" ]; then
+    cd -
+  fi
 fi
 
 # --- Flutter Project Setup ---
@@ -100,17 +127,62 @@ echo "Current directory: $(pwd)"
 cd .. 
 echo "Current directory: $(pwd)"
 
-echo "Running flutter pub get in project root..."
-if ! flutter pub get; then
-  echo "WARNING: flutter pub get failed, retrying with --verbose"
-  flutter pub get --verbose
-fi
+# Ensure environment is properly set up
+echo "Setting up Flutter environment..."
+flutter doctor -v
 
+# Clean Flutter project
+echo "Cleaning Flutter project..."
+flutter clean
+
+# Get dependencies with retry mechanism
+echo "Running flutter pub get in project root..."
+MAX_RETRIES=3
+RETRY_COUNT=0
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+  if flutter pub get --verbose; then
+    echo "Dependencies successfully fetched"
+    break
+  else
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+      echo "ERROR: flutter pub get failed after $MAX_RETRIES attempts"
+      exit 1
+    fi
+    echo "Attempt $RETRY_COUNT of $MAX_RETRIES failed, retrying..."
+    sleep 5
+  fi
+done
+
+# Build iOS with retry mechanism
+# Modify the Flutter build section
+# Fix 1: Add proper environment variables for RubyGems before CocoaPods
+echo "--- Configuring RubyGems Environment ---"
+export GEM_HOME="$HOME/.gem"
+export PATH="$GEM_HOME/bin:$PATH"
+
+# Fix 2: Update the Flutter build command syntax
 echo "Running flutter build ios in project root..."
-if ! flutter build ios --release --no-codesign; then
-  echo "WARNING: flutter build ios failed, retrying with --verbose"
-  flutter build ios --release --no-codesign --verbose
-fi
+RETRY_COUNT=0
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+  if flutter build ios --release --no-codesign --verbose --no-pub; then  # Fixed syntax error here
+    echo "iOS build completed successfully"
+    break
+  else
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+      echo "ERROR: flutter build ios failed after $MAX_RETRIES attempts"
+      # Add diagnostic commands
+      echo "=== BUILD FAILURE DIAGNOSTICS ==="
+      flutter doctor -v
+      ls -la ios/
+      pod repo list
+      exit 1
+    fi
+    echo "Attempt $RETRY_COUNT of $MAX_RETRIES failed, retrying..."
+    sleep $((RETRY_COUNT * 5))
+  fi
+done
 
 echo "Checking for Generated.xcconfig..."
 ls -l ios/Flutter/ || echo "Warning: Could not list Flutter directory contents"
@@ -142,3 +214,14 @@ chmod +x "$0"
 echo "--- ci_post_clone.sh finished successfully ---"
 set +x 
 exit 0
+
+# Fix 3: Enhance CocoaPods setup
+echo "Ensuring CocoaPods is properly installed..."
+gem install cocoapods --user-install
+pod setup
+pod repo update
+
+# Fix 4: Add explicit path to Pods directory
+echo "Running pod install with explicit path..."
+cd "$CI_WORKSPACE/ios"
+pod install
