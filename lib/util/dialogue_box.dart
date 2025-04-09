@@ -74,7 +74,25 @@ class _DialogueBoxState extends State<DialogueBox> {
     _selectedNotificationFrequency =
         widget.initialNotificationFrequency ?? 'Daily';
     if (!_notificationFrequencies.contains(_selectedNotificationFrequency)) {
-      _selectedNotificationFrequency = 'Daily';
+      if (widget.initialNotificationFrequency != null &&
+          widget.initialNotificationFrequency!.startsWith('Custom:')) {
+        _selectedNotificationFrequency = 'Custom';
+        String daysString = widget.initialNotificationFrequency!.substring(7);
+        List<String> selectedDayNames = daysString.split(',');
+
+        for (int i = 0; i < _selectedDays.length; i++) {
+          _selectedDays[i] = false;
+        }
+
+        for (String dayName in selectedDayNames) {
+          int index = _daysOfWeek.indexOf(dayName);
+          if (index != -1) {
+            _selectedDays[index] = true;
+          }
+        }
+      } else {
+        _selectedNotificationFrequency = 'Daily';
+      }
     }
 
     _description = widget.initialDescription ?? '';
@@ -419,6 +437,23 @@ class _DialogueBoxState extends State<DialogueBox> {
                                   return;
                                 }
 
+                                String notificationFrequency =
+                                    _selectedNotificationFrequency;
+                                if (_selectedNotificationFrequency ==
+                                        'Custom' &&
+                                    _selectedDays.contains(true)) {
+                                  List<String> selectedDayNames = [];
+                                  for (int i = 0;
+                                      i < _selectedDays.length;
+                                      i++) {
+                                    if (_selectedDays[i]) {
+                                      selectedDayNames.add(_daysOfWeek[i]);
+                                    }
+                                  }
+                                  notificationFrequency =
+                                      'Custom:${selectedDayNames.join(',')}';
+                                }
+
                                 final result = {
                                   'title': _controller.text.trim(),
                                   'description': _description,
@@ -433,7 +468,7 @@ class _DialogueBoxState extends State<DialogueBox> {
                                       widget.initialCategory ??
                                       'Default',
                                   'notificationFrequency':
-                                      _selectedNotificationFrequency,
+                                      notificationFrequency,
                                 };
 
                                 if (widget.onSave != null) {
