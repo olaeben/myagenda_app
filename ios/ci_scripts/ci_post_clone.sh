@@ -130,15 +130,21 @@ else
 fi
 
 # --- Flutter Project Setup ---
-# Go UP one level to the 'ios' directory first
-cd .. 
+# Change directory handling to use absolute paths
+echo "Navigating to project root..."
+PROJECT_ROOT="/Users/oibitoye/Downloads/myagenda_app/myagenda_app"
+cd "$PROJECT_ROOT" || { echo "Failed to enter project root"; exit 1; }
 echo "Current directory: $(pwd)"
 
-# Go UP another level to the project root directory
-cd .. 
-echo "Current directory: $(pwd)"
+# Verify we're in the correct location
+if [ ! -f "pubspec.yaml" ]; then
+  echo "Error: pubspec.yaml not found - wrong directory?"
+  echo "Current directory contents:"
+  ls -la
+  exit 1
+fi
 
-# Ensure environment is properly set up
+# Existing setup commands
 echo "Setting up Flutter environment..."
 flutter doctor -v
 
