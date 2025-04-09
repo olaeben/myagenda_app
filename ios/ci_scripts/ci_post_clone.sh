@@ -48,8 +48,19 @@ if [ -z "$FLUTTER_PATH" ]; then
     echo "Flutter not found. Installing Flutter SDK..."
     
     # Create a temporary directory for Flutter
+    # In the Flutter installation section:
+    # Change from:
     TEMP_DIR="$CI_WORKSPACE/flutter_sdk"
-    mkdir -p "$TEMP_DIR"
+    
+    # Change to (add fallback to home directory):
+    TEMP_DIR="${CI_WORKSPACE:-$HOME}/flutter_sdk"
+    
+    # Then modify the directory creation to handle permissions:
+    mkdir -p "$TEMP_DIR" || {
+      echo "Falling back to user home directory"
+      TEMP_DIR="$HOME/flutter_sdk"
+      mkdir -p "$TEMP_DIR"
+    }
     cd "$TEMP_DIR"
     
     # Download Flutter SDK
