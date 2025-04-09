@@ -132,7 +132,7 @@ fi
 # --- Flutter Project Setup ---
 # Fix directory navigation using relative paths
 echo "Navigating to project root..."
-cd ../..  
+cd "$CI_WORKSPACE"
 echo "Current directory: $(pwd)"
 
 # Verify we're in the correct location
