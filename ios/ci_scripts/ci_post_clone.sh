@@ -130,10 +130,9 @@ else
 fi
 
 # --- Flutter Project Setup ---
-# Change directory handling to use absolute paths
+# Fix directory navigation using relative paths
 echo "Navigating to project root..."
-PROJECT_ROOT="/Users/oibitoye/Downloads/myagenda_app/myagenda_app"
-cd "$PROJECT_ROOT" || { echo "Failed to enter project root"; exit 1; }
+cd ../..  
 echo "Current directory: $(pwd)"
 
 # Verify we're in the correct location
