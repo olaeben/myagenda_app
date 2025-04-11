@@ -1219,10 +1219,30 @@ class _HomePageState extends State<HomePage> {
           agenda.status = result['status'] ?? false;
           agenda.updatedAt = DateTime.now();
           if (!agenda.status) {
+            String frequency = agenda.notificationFrequency;
+            List<bool>? selectedDays;
+
+            if (frequency.startsWith('Custom:')) {
+              String daysString = frequency.substring(7);
+              List<String> selectedDayNames = daysString.split(',');
+              selectedDays = List.filled(7, false);
+
+              for (String dayName in selectedDayNames) {
+                int index = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                    .indexOf(dayName);
+                if (index != -1) {
+                  selectedDays[index] = true;
+                }
+              }
+              frequency = 'Custom';
+            }
+
             _notificationService.scheduleDeadlineNotifications(
               id: agenda.title.hashCode,
               title: agenda.title,
               deadline: agenda.deadline,
+              frequency: frequency,
+              selectedDays: selectedDays,
             );
           }
         } else {
@@ -1237,10 +1257,31 @@ class _HomePageState extends State<HomePage> {
             updatedAt: DateTime.now(),
           );
           _agendas.add(newAgenda);
+
+          String frequency = newAgenda.notificationFrequency;
+          List<bool>? selectedDays;
+
+          if (frequency.startsWith('Custom:')) {
+            String daysString = frequency.substring(7);
+            List<String> selectedDayNames = daysString.split(',');
+            selectedDays = List.filled(7, false);
+
+            for (String dayName in selectedDayNames) {
+              int index = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                  .indexOf(dayName);
+              if (index != -1) {
+                selectedDays[index] = true;
+              }
+            }
+            frequency = 'Custom';
+          }
+
           _notificationService.scheduleDeadlineNotifications(
             id: newAgenda.title.hashCode,
             title: newAgenda.title,
             deadline: newAgenda.deadline,
+            frequency: frequency,
+            selectedDays: selectedDays,
           );
         }
       });
@@ -1272,10 +1313,30 @@ class _HomePageState extends State<HomePage> {
             agenda.status = result['status'] ?? agenda.status;
             agenda.updatedAt = DateTime.now();
             if (!agenda.status) {
+              String frequency = agenda.notificationFrequency;
+              List<bool>? selectedDays;
+
+              if (frequency.startsWith('Custom:')) {
+                String daysString = frequency.substring(7);
+                List<String> selectedDayNames = daysString.split(',');
+                selectedDays = List.filled(7, false);
+
+                for (String dayName in selectedDayNames) {
+                  int index = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                      .indexOf(dayName);
+                  if (index != -1) {
+                    selectedDays[index] = true;
+                  }
+                }
+                frequency = 'Custom';
+              }
+
               _notificationService.scheduleDeadlineNotifications(
                 id: agenda.title.hashCode,
                 title: agenda.title,
                 deadline: agenda.deadline,
+                frequency: frequency,
+                selectedDays: selectedDays,
               );
             }
           } else {

@@ -87,8 +87,7 @@ class NotificationService {
 
         for (int i = 0; i < selectedDayIndices.length; i++) {
           final dayIndex = selectedDayIndices[i];
-          final weekday = dayIndex + 1;
-
+          final weekday = dayIndex == 6 ? 7 : dayIndex + 1;
           DateTime nextOccurrence = now;
           while (nextOccurrence.weekday != weekday ||
               nextOccurrence.isBefore(now)) {
