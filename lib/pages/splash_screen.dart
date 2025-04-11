@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../pages/homepage.dart';
 import 'package:rive_animated_icon/rive_animated_icon.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../widgets/custom_text.dart';
 
@@ -17,14 +18,39 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   bool isHovered = false;
+  String _buttonText = 'Let\'s begin';
+  bool _isFirstLaunch = true;
 
   @override
   void initState() {
     super.initState();
+    _checkFirstLaunch();
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
+  }
+
+  Future<void> _checkFirstLaunch() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool hasLaunched = prefs.getBool('hasLaunched') ?? false;
+
+    if (mounted) {
+      setState(() {
+        if (hasLaunched) {
+          _buttonText = 'Welcome back';
+          _isFirstLaunch = false;
+        } else {
+          _buttonText = 'Let\'s begin';
+          _isFirstLaunch = true;
+        }
+      });
+    }
+  }
+
+  Future<void> _markFirstLaunch() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('hasLaunched', true);
   }
 
   void _handleTap() {
@@ -87,6 +113,9 @@ class _SplashScreenState extends State<SplashScreen>
             const SizedBox(height: 60),
             ElevatedButton.icon(
               onPressed: () {
+                if (_isFirstLaunch) {
+                  _markFirstLaunch();
+                }
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
@@ -103,7 +132,7 @@ class _SplashScreenState extends State<SplashScreen>
                     : Colors.black,
               ),
               label: CustomText2(
-                'Let\'s begin',
+                _buttonText,
                 color: colorScheme.brightness == Brightness.light
                     ? Colors.white
                     : Colors.black,
