@@ -161,6 +161,7 @@ class AgendaTile extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.all(16),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   if (showCheckbox)
                     Padding(
@@ -177,6 +178,7 @@ class AgendaTile extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Flexible(
                               child: Container(
@@ -207,7 +209,6 @@ class AgendaTile extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            SizedBox(width: 8),
                             CustomText2(
                               _getTimeLeft(),
                               fontSize: 12,
