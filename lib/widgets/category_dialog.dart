@@ -52,15 +52,21 @@ class _CategoryDialogState extends State<CategoryDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Handle bar at top
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
+            GestureDetector(
+              onVerticalDragEnd: (details) {
+                if (details.primaryVelocity! > 0) {
+                  Navigator.of(context).pop();
+                }
+              },
+              child: Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
             ),

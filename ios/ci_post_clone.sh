@@ -49,4 +49,17 @@ if [ ! -f "ios/Flutter/Generated.xcconfig" ]; then
   echo "FLUTTER_BUILD_MODE=release" >> ios/Flutter/Generated.xcconfig
 fi
 
+# Ensure Pods-Runner xcfilelist files exist
+PODS_RUNNER_DIR="ios/Pods/Target Support Files/Pods-Runner"
+if [ ! -f "$PODS_RUNNER_DIR/Pods-Runner.debug.xcfilelist" ]; then
+  echo "❗ Pods-Runner.debug.xcfilelist missing — create minimal fallback"
+  mkdir -p "$PODS_RUNNER_DIR"
+  echo "" > "$PODS_RUNNER_DIR/Pods-Runner.debug.xcfilelist"
+fi
+if [ ! -f "$PODS_RUNNER_DIR/Pods-Runner.release.xcfilelist" ]; then
+  echo "❗ Pods-Runner.release.xcfilelist missing — create minimal fallback"
+  mkdir -p "$PODS_RUNNER_DIR"
+  echo "" > "$PODS_RUNNER_DIR/Pods-Runner.release.xcfilelist"
+fi
+
 echo "✅ iOS CI Post-Clone Script complete"

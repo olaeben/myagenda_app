@@ -182,14 +182,22 @@ class _DialogueBoxState extends State<DialogueBox> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Center(
-                          child: Container(
-                            width: 40,
-                            height: 4,
-                            margin: const EdgeInsets.symmetric(vertical: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              borderRadius: BorderRadius.circular(2),
+                        GestureDetector(
+                          onVerticalDragEnd: (details) {
+                            if (details.primaryVelocity! > 0) {
+                              // Dragging down - close the modal
+                              Navigator.of(context).pop();
+                            }
+                          },
+                          child: Center(
+                            child: Container(
+                              width: 40,
+                              height: 4,
+                              margin: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                borderRadius: BorderRadius.circular(2),
+                              ),
                             ),
                           ),
                         ),
@@ -199,7 +207,9 @@ class _DialogueBoxState extends State<DialogueBox> {
                           child: Align(
                             alignment: Alignment.centerLeft,
                             child: Text(
-                              'Add New Agenda',
+                              widget.isEditing
+                                  ? 'Update Agenda'
+                                  : 'Add New Agenda',
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
@@ -843,71 +853,102 @@ class _DialogueBoxState extends State<DialogueBox> {
       ),
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => Container(
-          padding: EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Select Days for Notifications',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Poppins',
-                ),
-              ),
-              SizedBox(height: 20),
-              Wrap(
-                spacing: 8.0,
-                runSpacing: 8.0,
-                children: List.generate(
-                  7,
-                  (index) => GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedDays[index] = !_selectedDays[index];
-                      });
-                      this.setState(() {});
-                      _validateNotificationFrequency();
-                    },
-                    child: Container(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: _selectedDays[index]
-                            ? (isLightMode ? Colors.black : Colors.white)
-                            : (isLightMode
-                                ? Colors.grey[200]
-                                : Colors.grey[700]),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        _daysOfWeek[index],
-                        style: TextStyle(
-                          color: _selectedDays[index]
-                              ? (isLightMode ? Colors.white : Colors.black)
-                              : (isLightMode ? Colors.black87 : Colors.white70),
-                          fontWeight: _selectedDays[index]
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                        ),
-                      ),
+              GestureDetector(
+                onVerticalDragEnd: (details) {
+                  if (details.primaryVelocity! > 0) {
+                    Navigator.of(context).pop();
+                  }
+                },
+                child: Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
               ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isLightMode ? Colors.black : Colors.white,
-                  foregroundColor: isLightMode ? Colors.white : Colors.black,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
+              Padding(
+                padding: EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Select Days for Notifications',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    Wrap(
+                      spacing: 8.0,
+                      runSpacing: 8.0,
+                      children: List.generate(
+                        7,
+                        (index) => GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedDays[index] = !_selectedDays[index];
+                            });
+                            this.setState(() {});
+                            _validateNotificationFrequency();
+                          },
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: _selectedDays[index]
+                                  ? (isLightMode ? Colors.black : Colors.white)
+                                  : (isLightMode
+                                      ? Colors.grey[200]
+                                      : Colors.grey[700]),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              _daysOfWeek[index],
+                              style: TextStyle(
+                                color: _selectedDays[index]
+                                    ? (isLightMode
+                                        ? Colors.white
+                                        : Colors.black)
+                                    : (isLightMode
+                                        ? Colors.black87
+                                        : Colors.white70),
+                                fontWeight: _selectedDays[index]
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            isLightMode ? Colors.black : Colors.white,
+                        foregroundColor:
+                            isLightMode ? Colors.white : Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      child: Text('Done'),
+                    ),
+                  ],
                 ),
-                child: Text('Done'),
               ),
             ],
           ),
