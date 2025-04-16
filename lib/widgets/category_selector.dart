@@ -159,72 +159,96 @@ class _CategorySelectorState extends State<CategorySelector> {
           color: isLightMode ? Colors.white : Colors.grey[850],
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Add New Category',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Poppins',
-                    color: isLightMode ? Colors.black : Colors.white,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onVerticalDragEnd: (details) {
+                if (details.primaryVelocity! > 0) {
+                  Navigator.of(context).pop();
+                }
+              },
+              child: Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-              SizedBox(height: 16),
-              TextField(
-                controller: _newCategoryController,
-                decoration: InputDecoration(
-                  hintText: 'Enter category name',
-                  hintStyle: TextStyle(
-                    color: isLightMode ? Colors.black26 : Colors.grey[100],
-                  ),
-                  filled: true,
-                  fillColor: isLightMode ? Colors.grey[100] : Colors.grey[800],
-                  border: UnderlineInputBorder(),
-                ),
-                autofocus: true,
-              ),
-              SizedBox(height: 20),
-              Center(
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (_newCategoryController.text.isNotEmpty) {
-                      final newCategory = _newCategoryController.text;
-                      setState(() {
-                        _selectedCategory = newCategory;
-                      });
-                      widget.onNewCategoryAdded(newCategory);
-                      widget.onCategorySelected(newCategory);
-                      _newCategoryController.clear();
-                      Navigator.pop(context);
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isLightMode ? Colors.black : Colors.white,
-                    foregroundColor: isLightMode ? Colors.white : Colors.black,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 100, vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Add New Category',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Poppins',
+                        color: isLightMode ? Colors.black : Colors.white,
+                      ),
                     ),
                   ),
-                  child: const Text('Create',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      )),
-                ),
+                  SizedBox(height: 16),
+                  TextField(
+                    controller: _newCategoryController,
+                    decoration: InputDecoration(
+                      hintText: 'Enter category name',
+                      hintStyle: TextStyle(
+                        color: isLightMode ? Colors.black26 : Colors.grey[100],
+                      ),
+                      filled: true,
+                      fillColor: isLightMode ? Colors.grey[100] : Colors.grey[800],
+                      border: UnderlineInputBorder(),
+                    ),
+                    autofocus: true,
+                  ),
+                  SizedBox(height: 20),
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (_newCategoryController.text.isNotEmpty) {
+                          final newCategory = _newCategoryController.text;
+                          setState(() {
+                            _selectedCategory = newCategory;
+                          });
+                          widget.onNewCategoryAdded(newCategory);
+                          widget.onCategorySelected(newCategory);
+                          _newCategoryController.clear();
+                          Navigator.pop(context);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isLightMode ? Colors.black : Colors.white,
+                        foregroundColor: isLightMode ? Colors.white : Colors.black,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 100, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                      ),
+                      child: const Text('Create',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          )),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
