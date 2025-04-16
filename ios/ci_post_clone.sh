@@ -25,6 +25,13 @@ if ! flutter precache; then
   exit 1
 fi
 
+# Ensure Flutter generates all necessary files first
+echo "🏗️ Generating Flutter files (no build)"
+if ! flutter build ios --no-codesign --config-only; then
+  echo "❌ Flutter config generation failed"
+  exit 1
+fi
+
 cd ios
 
 if ! command -v pod &> /dev/null; then
@@ -37,10 +44,26 @@ rm -rf Pods
 rm -f Podfile.lock
 
 echo "📦 Installing Pods"
-if ! pod install; then
+if ! pod install --repo-update; then
   echo "❌ Pod installation failed"
   exit 1
 fi
+
+# Create missing xcfilelist files if they don't exist
+PODS_RUNNER_DIR="Pods/Target Support Files/Pods-Runner"
+mkdir -p "$PODS_RUNNER_DIR"
+
+for CONFIG in debug release; do
+  for TYPE in resources frameworks; do
+    for IO in input output; do
+      FILE="${PODS_RUNNER_DIR}/Pods-Runner-${TYPE}-${CONFIG}-${IO}-files.xcfilelist"
+      if [ ! -f "$FILE" ]; then
+        echo "❗ ${FILE} missing — creating empty fallback"
+        touch "$FILE"
+      fi
+    done
+  done
+done
 
 cd "${PROJECT_ROOT}"
 
@@ -50,26 +73,19 @@ if ! flutter build ios --release --no-codesign; then
   exit 1
 fi
 
-echo "✅ Flutter build completed successfully"
-
+# Double check Generated.xcconfig exists
 if [ ! -f "ios/Flutter/Generated.xcconfig" ]; then
   echo "❗ Generated.xcconfig still missing — create minimal fallback"
   mkdir -p ios/Flutter
-  echo "// fallback file" > ios/Flutter/Generated.xcconfig
-  echo "FLUTTER_TARGET=lib/main.dart" >> ios/Flutter/Generated.xcconfig
-  echo "FLUTTER_BUILD_MODE=release" >> ios/Flutter/Generated.xcconfig
-fi
-
-PODS_RUNNER_DIR="ios/Pods/Target Support Files/Pods-Runner"
-if [ ! -f "$PODS_RUNNER_DIR/Pods-Runner.debug.xcfilelist" ]; then
-  echo "❗ Pods-Runner.debug.xcfilelist missing — create minimal fallback"
-  mkdir -p "$PODS_RUNNER_DIR"
-  echo "" > "$PODS_RUNNER_DIR/Pods-Runner.debug.xcfilelist"
-fi
-if [ ! -f "$PODS_RUNNER_DIR/Pods-Runner.release.xcfilelist" ]; then
-  echo "❗ Pods-Runner.release.xcfilelist missing — create minimal fallback"
-  mkdir -p "$PODS_RUNNER_DIR"
-  echo "" > "$PODS_RUNNER_DIR/Pods-Runner.release.xcfilelist"
+  cat <<EOF > ios/Flutter/Generated.xcconfig
+// fallback file
+FLUTTER_TARGET=lib/main.dart
+FLUTTER_BUILD_MODE=release
+ASSET_MANIFEST_PATH=Flutter/App.framework/flutter_assets/AssetManifest.json
+SYMROOT=\${SOURCE_ROOT}/../build/ios
+FLUTTER_BUILD_DIR=build
+FLUTTER_FRAMEWORK_DIR=Flutter
+EOF
 fi
 
 echo "✅ iOS CI Post-Clone Script complete"
